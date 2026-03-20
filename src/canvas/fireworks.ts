@@ -43,7 +43,7 @@ export class FireworkSystem {
         size: 3 + Math.random() * 3,
         color: randomPastel(),
         shape: Math.random() > 0.7 ? 'heart' : 'circle',
-        maxLife: 60 + Math.random() * 40,
+        maxLife: 40 + Math.random() * 20,
         gravity: 0.04,
         drag: 0.97,
       }));

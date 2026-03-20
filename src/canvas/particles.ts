@@ -88,5 +88,5 @@ export function drawParticle(ctx: CanvasRenderingContext2D, p: Particle): void {
 }
 
 export function isAlive(p: Particle): boolean {
-  return p.life < p.maxLife && p.alpha > 0.01;
+  return p.life < p.maxLife && p.alpha > 0.05;
 }

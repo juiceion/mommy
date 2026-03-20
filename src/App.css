@@ -33,11 +33,13 @@ html, body, #root {
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 
 .section {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
@@ -167,7 +169,7 @@ html, body, #root {
     max-width: 300px;
   }
   .app {
-    scroll-snap-type: none;
+    scroll-snap-type: y mandatory;
   }
 }
 

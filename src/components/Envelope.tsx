@@ -127,7 +127,7 @@ const Envelope: React.FC = () => {
         <div
           style={{
             position: 'absolute',
-            top: opened ? '-120%' : '10%',
+            top: opened ? '-55%' : '10%',
             left: '5%',
             width: '90%',
             minHeight: '80%',

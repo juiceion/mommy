@@ -44,40 +44,50 @@ function drawEar(
 }
 
 function drawBunnyEye(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
-  // eye
+  // eye (softer color)
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#3a2a40';
+  ctx.fillStyle = '#2d1b36';
   ctx.fill();
-  // highlight
+  // main highlight (bigger, kawaii)
   ctx.beginPath();
-  ctx.arc(x + r * 0.3, y - r * 0.3, r * 0.35, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.25, y - r * 0.25, r * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  // second small highlight dot
+  ctx.beginPath();
+  ctx.arc(x - r * 0.2, y + r * 0.15, r * 0.18, 0, Math.PI * 2);
   ctx.fillStyle = '#fff';
   ctx.fill();
 }
 
 function drawBunnyNose(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
   ctx.beginPath();
-  ctx.moveTo(x, y - size / 2);
-  ctx.lineTo(x - size / 2, y + size / 2);
-  ctx.lineTo(x + size / 2, y + size / 2);
-  ctx.closePath();
+  ctx.ellipse(x, y, size / 2, size / 3, 0, 0, Math.PI * 2);
   ctx.fillStyle = '#f9a8d4';
   ctx.fill();
 }
 
 function drawSmile(ctx: CanvasRenderingContext2D, x: number, y: number, w: number) {
+  // kawaii "ω" mouth — two small arcs side by side
   ctx.beginPath();
-  ctx.arc(x, y, w, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.arc(x - w * 0.35, y, w * 0.45, 0.1 * Math.PI, 0.9 * Math.PI);
   ctx.strokeStyle = '#9b6b8a';
   ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + w * 0.35, y, w * 0.45, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.strokeStyle = '#9b6b8a';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
   ctx.stroke();
 }
 
 function drawCheek(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(249,168,212,0.35)';
+  ctx.arc(x, y, r * 1.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(249,168,212,0.55)';
   ctx.fill();
 }
 
@@ -127,23 +137,23 @@ function drawBunny(
   ctx.fillStyle = p.bodyColor;
   ctx.fill();
 
-  // head (circle)
-  const headR = s(28);
+  // head (circle) — larger for kawaii proportions
+  const headR = s(32);
   const headCY = bodyCY - bodyH + headR * 0.3;
   ctx.beginPath();
   ctx.arc(bx, headCY, headR, 0, Math.PI * 2);
   ctx.fillStyle = p.bodyColor;
   ctx.fill();
 
-  // ears
-  const earW = s(14);
+  // ears (wider for softer look)
+  const earW = s(16);
   const earH = s(34);
   const earSpread = s(14);
   drawEar(ctx, bx - earSpread, headCY - headR + s(4), earW, earH, p.earOuter, p.earInner, -0.15);
   drawEar(ctx, bx + earSpread, headCY - headR + s(4), earW, earH, p.earOuter, p.earInner, 0.15);
 
-  // eyes
-  const eyeR = s(4);
+  // eyes (bigger for kawaii)
+  const eyeR = s(6);
   const eyeY = headCY - s(2);
   drawBunnyEye(ctx, bx - s(10), eyeY, eyeR);
   drawBunnyEye(ctx, bx + s(10), eyeY, eyeR);
@@ -195,6 +205,18 @@ function drawBunny(
   ctx.beginPath();
   ctx.ellipse(bx + s(16), footY, s(12), s(6), 0, 0, Math.PI * 2);
   ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+
+  // pom-pom tail
+  const tailX = bx - facing * s(22);
+  const tailY = by - s(18);
+  ctx.beginPath();
+  ctx.arc(tailX, tailY, s(10), 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(tailX + s(2), tailY - s(2), s(3), 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.fill();
 }
 

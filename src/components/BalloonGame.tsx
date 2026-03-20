@@ -2,80 +2,136 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { PASTEL_COLORS } from '../utils/colors';
 import { ConfettiSystem } from '../canvas/confetti';
 
-const WISHES = [
-  'Бесконечного счастья!', 'Пусть сбудутся все мечты!',
-  'Здоровья и радости!', 'Улыбок каждый день!',
-  'Тепла и уюта!', 'Вдохновения и сил!',
-  'Ярких путешествий!', 'Пусть всё получается!',
-  'Море красоты и света!', 'Новых впечатлений!',
-  'Волшебства в каждом дне!', 'Гармонии и нежности!',
-];
+const TARGET_PHRASE = 'С ДНЁМ РОЖДЕНИЯ';
+const TARGET_LETTERS = TARGET_PHRASE.split('');
 
-interface Balloon {
+const CYRILLIC_DECOYS = 'АБВГЖЗИКЛОПРСТУФХЦЧШЩЭЮЯ'.split('');
+
+interface FloatingLetter {
   x: number;
   y: number;
   baseX: number;
-  radius: number;
+  letter: string;
+  shape: 'star' | 'heart' | 'circle';
   color: string;
-  popped: boolean;
+  radius: number;
   speed: number;
   wobblePhase: number;
   wobbleAmplitude: number;
   wobbleSpeed: number;
-  wishIndex: number;
+  collected: boolean;
+  popAnim: number; // 0 = no pop, >0 = pop animation frames remaining
 }
 
-function createBalloon(
+const SHAPES: FloatingLetter['shape'][] = ['star', 'heart', 'circle'];
+
+function createFloatingLetter(
   w: number,
   h: number,
-  wishIndex: number,
+  letter: string,
   yOverride?: number,
   isMobile?: boolean,
-): Balloon {
-  const minR = isMobile ? 25 : 30;
-  const maxR = isMobile ? 35 : 42;
+): FloatingLetter {
+  const minR = isMobile ? 22 : 28;
+  const maxR = isMobile ? 30 : 36;
   const radius = minR + Math.random() * (maxR - minR);
   const baseX = radius + 30 + Math.random() * (w - 2 * (radius + 30));
   return {
     x: baseX,
     y: yOverride ?? h + radius + 20,
     baseX,
+    letter,
+    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+    color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
     radius,
-    color: PASTEL_COLORS[wishIndex % PASTEL_COLORS.length],
-    popped: false,
-    speed: 0.4 + Math.random() * 0.4,
+    speed: 0.35 + Math.random() * 0.35,
     wobblePhase: Math.random() * Math.PI * 2,
-    wobbleAmplitude: 15 + Math.random() * 15,
+    wobbleAmplitude: 12 + Math.random() * 12,
     wobbleSpeed: 0.008 + Math.random() * 0.012,
-    wishIndex,
+    collected: false,
+    popAnim: 0,
   };
+}
+
+function pickLetter(collectedCount: number): string {
+  const nextNeeded = TARGET_LETTERS[collectedCount];
+  if (nextNeeded === ' ') return CYRILLIC_DECOYS[Math.floor(Math.random() * CYRILLIC_DECOYS.length)];
+  // 40% chance correct letter, 60% decoy
+  if (Math.random() < 0.4) return nextNeeded;
+  return CYRILLIC_DECOYS[Math.floor(Math.random() * CYRILLIC_DECOYS.length)];
+}
+
+function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  const spikes = 5;
+  const outerR = r;
+  const innerR = r * 0.5;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerR : innerR;
+    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+function drawHeartShape(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  const s = r * 0.65;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.7);
+  ctx.bezierCurveTo(cx - s * 1.3, cy - s * 0.3, cx - s * 0.7, cy - s * 1.2, cx, cy - s * 0.5);
+  ctx.bezierCurveTo(cx + s * 0.7, cy - s * 1.2, cx + s * 1.3, cy - s * 0.3, cx, cy + s * 0.7);
+  ctx.closePath();
 }
 
 const BalloonGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const balloonsRef = useRef<Balloon[]>([]);
+  const lettersRef = useRef<FloatingLetter[]>([]);
   const confettiRef = useRef(new ConfettiSystem());
   const animRef = useRef(0);
-  const nextWishRef = useRef(0);
-  const poppedWishesRef = useRef(new Set<number>());
-  const [poppedWish, setPoppedWish] = useState<string | null>(null);
-  const [allPopped, setAllPopped] = useState(false);
+  const collectedRef = useRef(0);
+  const [collectedCount, setCollectedCount] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const initializedRef = useRef(false);
-  const wishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const initBalloons = useCallback((w: number, h: number) => {
+  // Auto-skip spaces
+  const skipSpaces = useCallback(() => {
+    while (
+      collectedRef.current < TARGET_LETTERS.length &&
+      TARGET_LETTERS[collectedRef.current] === ' '
+    ) {
+      collectedRef.current++;
+      setCollectedCount(collectedRef.current);
+    }
+    if (collectedRef.current >= TARGET_LETTERS.length) {
+      setCompleted(true);
+    }
+  }, []);
+
+  const initLetters = useCallback((w: number, h: number) => {
+    skipSpaces();
     const isMobile = w < 480;
     const count = isMobile ? 8 : 12;
-    const balloons: Balloon[] = [];
-    const totalHeight = h + 100; // spread across full height + below
+    const letters: FloatingLetter[] = [];
+    const totalHeight = h + 100;
 
+    // Ensure at least 2 correct letters in initial batch
+    let correctCount = 0;
     for (let i = 0; i < count; i++) {
       const staggerY = -100 + (totalHeight / count) * i + Math.random() * 40;
-      balloons.push(createBalloon(w, h, i % WISHES.length, staggerY, isMobile));
+      let letter = pickLetter(collectedRef.current);
+      if (i < 3 && correctCount < 2 && TARGET_LETTERS[collectedRef.current] !== ' ') {
+        letter = TARGET_LETTERS[collectedRef.current];
+        correctCount++;
+      }
+      letters.push(createFloatingLetter(w, h, letter, staggerY, isMobile));
     }
-    nextWishRef.current = count % WISHES.length;
-    balloonsRef.current = balloons;
-  }, []);
+    lettersRef.current = letters;
+  }, [skipSpaces]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,58 +144,86 @@ const BalloonGame: React.FC = () => {
       canvas.height = canvas.offsetHeight * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (!initializedRef.current) {
-        initBalloons(canvas.offsetWidth, canvas.offsetHeight);
+        initLetters(canvas.offsetWidth, canvas.offsetHeight);
         initializedRef.current = true;
       }
     };
     resize();
     window.addEventListener('resize', resize);
 
-    const drawBalloon = (b: Balloon) => {
-      if (b.popped) return;
-      const wobbleX = Math.sin(b.wobblePhase) * b.wobbleAmplitude;
-      const bx = b.baseX + wobbleX;
-      b.x = bx; // store for hit detection
+    const drawFloatingLetter = (fl: FloatingLetter) => {
+      if (fl.collected && fl.popAnim <= 0) return;
 
-      // String (curved line from knot downward)
-      ctx.beginPath();
-      ctx.moveTo(bx, b.y + b.radius);
-      ctx.quadraticCurveTo(bx + 8, b.y + b.radius + 25, bx - 5, b.y + b.radius + 45);
-      ctx.strokeStyle = 'rgba(91, 44, 111, 0.3)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      const wobbleX = Math.sin(fl.wobblePhase) * fl.wobbleAmplitude;
+      const bx = fl.baseX + wobbleX;
+      fl.x = bx;
 
-      // Balloon body (ellipse)
+      // Pop animation (shrink + fade)
+      let scale = 1;
+      let alpha = 0.9;
+      if (fl.popAnim > 0) {
+        const t = fl.popAnim / 12;
+        scale = t;
+        alpha = t * 0.9;
+      }
+
       ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(bx, b.y, b.radius * 0.85, b.radius, 0, 0, Math.PI * 2);
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = b.color;
-      ctx.fill();
-      ctx.restore();
+      ctx.globalAlpha = alpha;
+      ctx.translate(bx, fl.y);
+      ctx.scale(scale, scale);
 
-      // Knot triangle at bottom
+      // Draw shape background
       ctx.beginPath();
-      ctx.moveTo(bx - 4, b.y + b.radius);
-      ctx.lineTo(bx, b.y + b.radius + 7);
-      ctx.lineTo(bx + 4, b.y + b.radius);
-      ctx.closePath();
-      ctx.fillStyle = b.color;
+      switch (fl.shape) {
+        case 'circle':
+          ctx.arc(0, 0, fl.radius, 0, Math.PI * 2);
+          break;
+        case 'star':
+          drawStar(ctx, 0, 0, fl.radius);
+          break;
+        case 'heart':
+          drawHeartShape(ctx, 0, -fl.radius * 0.1, fl.radius);
+          break;
+      }
+      ctx.fillStyle = fl.color;
       ctx.fill();
 
-      // Highlight (small white ellipse at top-left)
+      // Highlight
       ctx.beginPath();
       ctx.ellipse(
-        bx - b.radius * 0.25,
-        b.y - b.radius * 0.3,
-        b.radius * 0.18,
-        b.radius * 0.32,
+        -fl.radius * 0.2,
+        -fl.radius * 0.2,
+        fl.radius * 0.18,
+        fl.radius * 0.28,
         -0.4,
         0,
         Math.PI * 2,
       );
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.fill();
+
+      // String below (only for circle)
+      if (fl.shape === 'circle') {
+        ctx.beginPath();
+        ctx.moveTo(0, fl.radius);
+        ctx.quadraticCurveTo(6, fl.radius + 20, -4, fl.radius + 35);
+        ctx.strokeStyle = 'rgba(91, 44, 111, 0.25)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+
+      // Letter
+      const fontSize = fl.radius * 0.85;
+      ctx.font = `bold ${fontSize}px 'Comfortaa', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = 'rgba(91,44,111,0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeText(fl.letter, 0, 2);
+      ctx.fillText(fl.letter, 0, 2);
+
+      ctx.restore();
     };
 
     const animate = () => {
@@ -148,31 +232,37 @@ const BalloonGame: React.FC = () => {
       const isMobile = w < 480;
       ctx.clearRect(0, 0, w, h);
 
-      for (const b of balloonsRef.current) {
-        if (b.popped) continue;
-        b.wobblePhase += b.wobbleSpeed;
-        b.y -= b.speed;
+      for (const fl of lettersRef.current) {
+        if (fl.collected && fl.popAnim <= 0) continue;
 
-        // Recycle when balloon exits top
-        if (b.y < -b.radius * 2) {
-          const nextIdx = nextWishRef.current;
-          nextWishRef.current = (nextWishRef.current + 1) % WISHES.length;
-          const minR = isMobile ? 25 : 30;
-          const maxR = isMobile ? 35 : 42;
-          const newRadius = minR + Math.random() * (maxR - minR);
-          b.radius = newRadius;
-          b.baseX = newRadius + 30 + Math.random() * (w - 2 * (newRadius + 30));
-          b.y = h + newRadius + 20;
-          b.color = PASTEL_COLORS[nextIdx % PASTEL_COLORS.length];
-          b.speed = 0.4 + Math.random() * 0.4;
-          b.wobblePhase = Math.random() * Math.PI * 2;
-          b.wobbleAmplitude = 15 + Math.random() * 15;
-          b.wobbleSpeed = 0.008 + Math.random() * 0.012;
-          b.wishIndex = nextIdx;
-          b.popped = false;
+        if (fl.popAnim > 0) {
+          fl.popAnim--;
+          drawFloatingLetter(fl);
+          continue;
         }
 
-        drawBalloon(b);
+        fl.wobblePhase += fl.wobbleSpeed;
+        fl.y -= fl.speed;
+
+        // Recycle when exits top
+        if (fl.y < -fl.radius * 2) {
+          const letter = pickLetter(collectedRef.current);
+          const newR = (isMobile ? 22 : 28) + Math.random() * (isMobile ? 8 : 8);
+          fl.radius = newR;
+          fl.baseX = newR + 30 + Math.random() * (w - 2 * (newR + 30));
+          fl.y = h + newR + 20;
+          fl.color = PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)];
+          fl.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+          fl.speed = 0.35 + Math.random() * 0.35;
+          fl.wobblePhase = Math.random() * Math.PI * 2;
+          fl.wobbleAmplitude = 12 + Math.random() * 12;
+          fl.wobbleSpeed = 0.008 + Math.random() * 0.012;
+          fl.letter = letter;
+          fl.collected = false;
+          fl.popAnim = 0;
+        }
+
+        drawFloatingLetter(fl);
       }
 
       confettiRef.current.update();
@@ -187,9 +277,10 @@ const BalloonGame: React.FC = () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [initBalloons]);
+  }, [initLetters]);
 
   const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (completed) return;
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
@@ -203,54 +294,112 @@ const BalloonGame: React.FC = () => {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    for (const b of balloonsRef.current) {
-      if (b.popped) continue;
-      const dx = x - b.x;
-      const dy = y - b.y;
-      if (dx * dx + dy * dy < b.radius * b.radius) {
-        b.popped = true;
-        confettiRef.current.burst(b.x, b.y, 25);
+    for (const fl of lettersRef.current) {
+      if (fl.collected) continue;
+      const dx = x - fl.x;
+      const dy = y - fl.y;
+      if (dx * dx + dy * dy < fl.radius * fl.radius * 1.3) {
+        const nextNeeded = TARGET_LETTERS[collectedRef.current];
 
-        // Track unique wishes
-        poppedWishesRef.current.add(b.wishIndex);
+        if (fl.letter === nextNeeded) {
+          // Correct!
+          fl.collected = true;
+          confettiRef.current.burst(fl.x, fl.y, 30);
+          collectedRef.current++;
+          setCollectedCount(collectedRef.current);
 
-        // Show wish
-        if (wishTimerRef.current) clearTimeout(wishTimerRef.current);
-        setPoppedWish(WISHES[b.wishIndex]);
-        wishTimerRef.current = setTimeout(() => setPoppedWish(null), 2500);
+          // Skip any spaces
+          while (
+            collectedRef.current < TARGET_LETTERS.length &&
+            TARGET_LETTERS[collectedRef.current] === ' '
+          ) {
+            collectedRef.current++;
+            setCollectedCount(collectedRef.current);
+          }
 
-        // Check if all 12 unique wishes collected
-        if (poppedWishesRef.current.size >= WISHES.length) {
-          setAllPopped(true);
-          confettiRef.current.rain(canvas.offsetWidth, 80);
+          if (collectedRef.current >= TARGET_LETTERS.length) {
+            setCompleted(true);
+            confettiRef.current.rain(canvas.offsetWidth, 80);
+          }
+
+          if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+          setFeedback('✓');
+          feedbackTimerRef.current = setTimeout(() => setFeedback(null), 800);
+        } else {
+          // Wrong — just pop it away
+          fl.collected = true;
+          fl.popAnim = 12;
         }
         break;
       }
     }
-  }, []);
+  }, [completed]);
+
+  // Build the word board display
+  const words = TARGET_PHRASE.split(' ');
+  let charIndex = 0;
 
   return (
     <div className="section" style={{ padding: 0, height: '100vh', minHeight: '100vh' }}>
+      {/* Word board */}
       <div
         style={{
           position: 'absolute',
-          top: '1rem',
+          top: '0.8rem',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 2,
-          background: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          borderRadius: '999px',
-          padding: '0.35rem 1.4rem',
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          borderRadius: '16px',
+          padding: '0.5rem 1rem',
+          maxWidth: '95vw',
         }}
       >
-        <h2
+        <p
           className="section-title"
-          style={{ margin: 0, whiteSpace: 'nowrap' }}
+          style={{ margin: '0 0 0.3rem 0', fontSize: '1.2rem', whiteSpace: 'nowrap' }}
         >
-          Лопни шарики!
-        </h2>
+          Собери фразу!
+        </p>
+        <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {words.map((word, wi) => {
+            const startIdx = charIndex;
+            charIndex += word.length + 1; // +1 for the space
+            return (
+              <div key={wi} style={{ display: 'flex', gap: '2px' }}>
+                {word.split('').map((ch, ci) => {
+                  const globalIdx = startIdx + ci;
+                  const isRevealed = globalIdx < collectedCount;
+
+                  return (
+                    <div
+                      key={ci}
+                      style={{
+                        width: '1.6rem',
+                        height: '2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderBottom: '2px solid',
+                        borderColor: isRevealed ? '#C4B5FD' : 'rgba(91,44,111,0.3)',
+                        fontFamily: "'Caveat', cursive",
+                        fontSize: '1.4rem',
+                        fontWeight: 700,
+                        color: '#5B2C6F',
+                        transition: 'all 0.3s ease',
+                        transform: isRevealed ? 'scale(1)' : 'scale(0.9)',
+                      }}
+                    >
+                      {isRevealed ? ch : ''}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <canvas
@@ -260,35 +409,27 @@ const BalloonGame: React.FC = () => {
         style={{ width: '100%', height: '100vh', display: 'block', cursor: 'pointer' }}
       />
 
-      {poppedWish && (
+      {feedback && (
         <div
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            background: 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            borderRadius: '1.2rem',
-            boxShadow: '0 8px 32px rgba(139, 92, 246, 0.18)',
-            padding: '1.2rem 2rem',
-            fontFamily: "'Caveat', cursive",
-            fontSize: '1.6rem',
+            fontSize: '3rem',
+            color: '#22c55e',
             fontWeight: 700,
-            color: '#8B5CF6',
-            textAlign: 'center',
-            animation: 'fadeIn 0.3s ease',
             pointerEvents: 'none',
             zIndex: 3,
-            maxWidth: '85vw',
+            animation: 'fadeIn 0.2s ease',
+            textShadow: '0 2px 8px rgba(34,197,94,0.3)',
           }}
         >
-          {poppedWish}
+          {feedback}
         </div>
       )}
 
-      {allPopped && (
+      {completed && (
         <div
           style={{
             position: 'absolute',
@@ -298,10 +439,16 @@ const BalloonGame: React.FC = () => {
             textAlign: 'center',
             zIndex: 3,
             animation: 'fadeIn 0.5s ease',
+            background: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            borderRadius: '1.2rem',
+            padding: '1.2rem 2rem',
+            boxShadow: '0 8px 32px rgba(139, 92, 246, 0.18)',
           }}
         >
           <p className="handwritten" style={{ fontSize: '2rem', color: '#5B2C6F' }}>
-            Все пожелания — для тебя!
+            С Днём Рождения, мамочка! 🎉
           </p>
         </div>
       )}
