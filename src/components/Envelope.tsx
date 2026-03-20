@@ -93,18 +93,17 @@ const Envelope: React.FC = () => {
           {/* Heart seal */}
           {!opened && (
             <div
+              className="envelope-heart"
               style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -70%)',
-                fontSize: '2rem',
+                marginLeft: '-12px',
+                marginTop: '-18px',
                 zIndex: 4,
                 animation: 'pulse 2s infinite',
               }}
-            >
-              💌
-            </div>
+            />
           )}
         </div>
 

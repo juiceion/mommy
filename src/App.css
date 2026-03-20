@@ -151,3 +151,98 @@ html, body, #root {
     font-size: 1.6rem;
   }
 }
+
+@media (max-width: 480px) {
+  .section {
+    padding: 1rem;
+  }
+  .section-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+  }
+  .btn {
+    font-size: 0.95rem;
+    padding: 0.7rem 1.5rem;
+    width: 80%;
+    max-width: 300px;
+  }
+  .app {
+    scroll-snap-type: none;
+  }
+}
+
+.section {
+  touch-action: pan-y;
+}
+
+/* CSS Heart for envelope */
+.envelope-heart {
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+
+.envelope-heart::before,
+.envelope-heart::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--heart-red);
+}
+
+.envelope-heart::before {
+  top: -12px;
+  left: 0;
+}
+
+.envelope-heart::after {
+  top: 0;
+  left: 12px;
+}
+
+.envelope-heart {
+  background: var(--heart-red);
+  transform: rotate(-45deg);
+}
+
+/* Hug arms */
+.hug-arm {
+  position: absolute;
+  top: 50%;
+  width: 80px;
+  height: 200px;
+  border-radius: 40px;
+  transition: transform 0.4s ease;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hug-arm-left {
+  left: 0;
+  transform: translateY(-50%) translateX(-120px);
+  background: linear-gradient(to right, rgba(249, 168, 212, 0.5), rgba(249, 168, 212, 0.15));
+}
+
+.hug-arm-right {
+  right: 0;
+  transform: translateY(-50%) translateX(120px);
+  background: linear-gradient(to left, rgba(249, 168, 212, 0.5), rgba(249, 168, 212, 0.15));
+}
+
+.hug-arm-left.active {
+  transform: translateY(-50%) translateX(20px);
+}
+
+.hug-arm-right.active {
+  transform: translateY(-50%) translateX(-20px);
+}
+
+@media (max-width: 480px) {
+  .hug-arm {
+    width: 50px;
+    height: 150px;
+    border-radius: 25px;
+  }
+}

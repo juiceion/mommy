@@ -3,20 +3,52 @@ import { PASTEL_COLORS } from '../utils/colors';
 import { ConfettiSystem } from '../canvas/confetti';
 
 const WISHES = [
-  'Счастья!', 'Здоровья!', 'Любви!', 'Радости!',
-  'Улыбок!', 'Тепла!', 'Удачи!', 'Вдохновения!',
-  'Гармонии!', 'Нежности!', 'Красоты!', 'Мечтаний!',
-  'Уюта!', 'Волшебства!', 'Света!',
+  'Желаю счастья и любви!', 'Пусть сбудутся все мечты!',
+  'Здоровья и радости!', 'Улыбок каждый день!',
+  'Тепла и уюта!', 'Вдохновения и сил!',
+  'Гармонии и нежности!', 'Пусть всё получается!',
+  'Море красоты и света!', 'Бесконечного счастья!',
+  'Волшебства в каждом дне!', 'Любви, что согревает!',
 ];
 
 interface Balloon {
-  x: number; y: number;
+  x: number;
+  y: number;
+  baseX: number;
   radius: number;
   color: string;
   popped: boolean;
+  speed: number;
   wobblePhase: number;
+  wobbleAmplitude: number;
   wobbleSpeed: number;
-  wish: string;
+  wishIndex: number;
+}
+
+function createBalloon(
+  w: number,
+  h: number,
+  wishIndex: number,
+  yOverride?: number,
+  isMobile?: boolean,
+): Balloon {
+  const minR = isMobile ? 25 : 30;
+  const maxR = isMobile ? 35 : 42;
+  const radius = minR + Math.random() * (maxR - minR);
+  const baseX = radius + 30 + Math.random() * (w - 2 * (radius + 30));
+  return {
+    x: baseX,
+    y: yOverride ?? h + radius + 20,
+    baseX,
+    radius,
+    color: PASTEL_COLORS[wishIndex % PASTEL_COLORS.length],
+    popped: false,
+    speed: 0.4 + Math.random() * 0.4,
+    wobblePhase: Math.random() * Math.PI * 2,
+    wobbleAmplitude: 15 + Math.random() * 15,
+    wobbleSpeed: 0.008 + Math.random() * 0.012,
+    wishIndex,
+  };
 }
 
 const BalloonGame: React.FC = () => {
@@ -24,33 +56,24 @@ const BalloonGame: React.FC = () => {
   const balloonsRef = useRef<Balloon[]>([]);
   const confettiRef = useRef(new ConfettiSystem());
   const animRef = useRef(0);
+  const nextWishRef = useRef(0);
+  const poppedWishesRef = useRef(new Set<number>());
   const [poppedWish, setPoppedWish] = useState<string | null>(null);
-  const [poppedCount, setPoppedCount] = useState(0);
   const [allPopped, setAllPopped] = useState(false);
   const initializedRef = useRef(false);
+  const wishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const initBalloons = useCallback((w: number, h: number) => {
+    const isMobile = w < 480;
+    const count = isMobile ? 8 : 12;
     const balloons: Balloon[] = [];
-    const count = 15;
-    const cols = 5;
-    const rows = 3;
-    const cellW = w / cols;
-    const cellH = (h * 0.7) / rows;
+    const totalHeight = h + 100; // spread across full height + below
 
     for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      balloons.push({
-        x: cellW * col + cellW / 2 + (Math.random() - 0.5) * cellW * 0.3,
-        y: h * 0.15 + cellH * row + cellH / 2 + (Math.random() - 0.5) * cellH * 0.3,
-        radius: 28 + Math.random() * 12,
-        color: PASTEL_COLORS[i % PASTEL_COLORS.length],
-        popped: false,
-        wobblePhase: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.02 + Math.random() * 0.02,
-        wish: WISHES[i % WISHES.length],
-      });
+      const staggerY = -100 + (totalHeight / count) * i + Math.random() * 40;
+      balloons.push(createBalloon(w, h, i % WISHES.length, staggerY, isMobile));
     }
+    nextWishRef.current = count % WISHES.length;
     balloonsRef.current = balloons;
   }, []);
 
@@ -74,47 +97,81 @@ const BalloonGame: React.FC = () => {
 
     const drawBalloon = (b: Balloon) => {
       if (b.popped) return;
-      const wobbleX = Math.sin(b.wobblePhase) * 3;
-      const bx = b.x + wobbleX;
+      const wobbleX = Math.sin(b.wobblePhase) * b.wobbleAmplitude;
+      const bx = b.baseX + wobbleX;
+      b.x = bx; // store for hit detection
 
-      // String
+      // String (curved line from knot downward)
       ctx.beginPath();
       ctx.moveTo(bx, b.y + b.radius);
-      ctx.quadraticCurveTo(bx + 5, b.y + b.radius + 20, bx - 3, b.y + b.radius + 40);
+      ctx.quadraticCurveTo(bx + 8, b.y + b.radius + 25, bx - 5, b.y + b.radius + 45);
       ctx.strokeStyle = 'rgba(91, 44, 111, 0.3)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Balloon body
+      // Balloon body (ellipse)
+      ctx.save();
       ctx.beginPath();
       ctx.ellipse(bx, b.y, b.radius * 0.85, b.radius, 0, 0, Math.PI * 2);
-      ctx.fillStyle = b.color;
       ctx.globalAlpha = 0.85;
+      ctx.fillStyle = b.color;
       ctx.fill();
+      ctx.restore();
 
-      // Knot
+      // Knot triangle at bottom
       ctx.beginPath();
       ctx.moveTo(bx - 4, b.y + b.radius);
-      ctx.lineTo(bx, b.y + b.radius + 6);
+      ctx.lineTo(bx, b.y + b.radius + 7);
       ctx.lineTo(bx + 4, b.y + b.radius);
+      ctx.closePath();
       ctx.fillStyle = b.color;
-      ctx.globalAlpha = 1;
       ctx.fill();
 
-      // Highlight
+      // Highlight (small white ellipse at top-left)
       ctx.beginPath();
-      ctx.ellipse(bx - b.radius * 0.25, b.y - b.radius * 0.3, b.radius * 0.2, b.radius * 0.35, -0.4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.ellipse(
+        bx - b.radius * 0.25,
+        b.y - b.radius * 0.3,
+        b.radius * 0.18,
+        b.radius * 0.32,
+        -0.4,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.fill();
     };
 
     const animate = () => {
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
+      const isMobile = w < 480;
       ctx.clearRect(0, 0, w, h);
 
       for (const b of balloonsRef.current) {
+        if (b.popped) continue;
         b.wobblePhase += b.wobbleSpeed;
+        b.y -= b.speed;
+
+        // Recycle when balloon exits top
+        if (b.y < -b.radius * 2) {
+          const nextIdx = nextWishRef.current;
+          nextWishRef.current = (nextWishRef.current + 1) % WISHES.length;
+          const minR = isMobile ? 25 : 30;
+          const maxR = isMobile ? 35 : 42;
+          const newRadius = minR + Math.random() * (maxR - minR);
+          b.radius = newRadius;
+          b.baseX = newRadius + 30 + Math.random() * (w - 2 * (newRadius + 30));
+          b.y = h + newRadius + 20;
+          b.color = PASTEL_COLORS[nextIdx % PASTEL_COLORS.length];
+          b.speed = 0.4 + Math.random() * 0.4;
+          b.wobblePhase = Math.random() * Math.PI * 2;
+          b.wobbleAmplitude = 15 + Math.random() * 15;
+          b.wobbleSpeed = 0.008 + Math.random() * 0.012;
+          b.wishIndex = nextIdx;
+          b.popped = false;
+        }
+
         drawBalloon(b);
       }
 
@@ -132,7 +189,7 @@ const BalloonGame: React.FC = () => {
     };
   }, [initBalloons]);
 
-  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     let clientX: number, clientY: number;
@@ -152,26 +209,49 @@ const BalloonGame: React.FC = () => {
       const dy = y - b.y;
       if (dx * dx + dy * dy < b.radius * b.radius) {
         b.popped = true;
-        confettiRef.current.burst(b.x, b.y, 20);
-        setPoppedWish(b.wish);
-        const newCount = poppedCount + 1;
-        setPoppedCount(newCount);
-        setTimeout(() => setPoppedWish(null), 1500);
+        confettiRef.current.burst(b.x, b.y, 25);
 
-        if (newCount >= balloonsRef.current.length) {
+        // Track unique wishes
+        poppedWishesRef.current.add(b.wishIndex);
+
+        // Show wish
+        if (wishTimerRef.current) clearTimeout(wishTimerRef.current);
+        setPoppedWish(WISHES[b.wishIndex]);
+        wishTimerRef.current = setTimeout(() => setPoppedWish(null), 2500);
+
+        // Check if all 12 unique wishes collected
+        if (poppedWishesRef.current.size >= WISHES.length) {
           setAllPopped(true);
           confettiRef.current.rain(canvas.offsetWidth, 80);
         }
         break;
       }
     }
-  };
+  }, []);
 
   return (
     <div className="section" style={{ padding: 0 }}>
-      <h2 className="section-title" style={{ position: 'absolute', top: '1rem', zIndex: 2 }}>
-        Лопни шарики!
-      </h2>
+      <div
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 2,
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          borderRadius: '999px',
+          padding: '0.35rem 1.4rem',
+        }}
+      >
+        <h2
+          className="section-title"
+          style={{ margin: 0, whiteSpace: 'nowrap' }}
+        >
+          Лопни шарики!
+        </h2>
+      </div>
 
       <canvas
         ref={canvasRef}
@@ -182,19 +262,26 @@ const BalloonGame: React.FC = () => {
 
       {poppedWish && (
         <div
-          className="handwritten"
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            fontSize: '2.5rem',
+            background: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            borderRadius: '1.2rem',
+            boxShadow: '0 8px 32px rgba(139, 92, 246, 0.18)',
+            padding: '1.2rem 2rem',
+            fontFamily: "'Caveat', cursive",
+            fontSize: '1.6rem',
             fontWeight: 700,
             color: '#8B5CF6',
-            textShadow: '0 4px 20px rgba(139, 92, 246, 0.3)',
+            textAlign: 'center',
             animation: 'fadeIn 0.3s ease',
             pointerEvents: 'none',
             zIndex: 3,
+            maxWidth: '85vw',
           }}
         >
           {poppedWish}
@@ -206,6 +293,8 @@ const BalloonGame: React.FC = () => {
           style={{
             position: 'absolute',
             bottom: '15%',
+            left: '50%',
+            transform: 'translateX(-50%)',
             textAlign: 'center',
             zIndex: 3,
             animation: 'fadeIn 0.5s ease',

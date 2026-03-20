@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { PASTEL_COLORS } from '../utils/colors';
 
+// ── Interfaces ──────────────────────────────────────────────
+
 interface Petal {
   x: number;
   y: number;
@@ -24,20 +26,38 @@ interface Star {
   phase: number;
 }
 
-const STAR_COLORS = ['#FDE68A', '#FFFFFF', '#D8B4FE'];
-const PETAL_COUNT = 20;
-const STAR_COUNT = 25;
+interface Bubble {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  alpha: number;
+  speed: number;
+  wobble: number;
+  wobbleSpeed: number;
+  phase: number;
+}
+
+// ── Constants ───────────────────────────────────────────────
+
+const PETAL_COUNT = 30;
+const STAR_COUNT = 30;
+const BUBBLE_COUNT = 12;
+
+const STAR_COLORS = ['#FDE68A', '#FFFFFF', '#C4B5FD'];
+
+// ── Factory functions ───────────────────────────────────────
 
 function createPetal(w: number, h: number, randomY = false): Petal {
   return {
     x: Math.random() * w,
-    y: randomY ? Math.random() * h : -Math.random() * h * 0.3,
-    size: 8 + Math.random() * 14,
+    y: randomY ? Math.random() * h : -(Math.random() * h * 0.3),
+    size: 10 + Math.random() * 12,
     color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
-    alpha: 0.25 + Math.random() * 0.35,
+    alpha: 0.4 + Math.random() * 0.4,
     rotation: Math.random() * Math.PI * 2,
-    rotationSpeed: (Math.random() - 0.5) * 0.015,
-    speed: 0.3 + Math.random() * 0.7,
+    rotationSpeed: (Math.random() - 0.5) * 0.012,
+    speed: 0.3 + Math.random() * 0.6,
     wobble: 30 + Math.random() * 40,
     wobbleSpeed: 0.005 + Math.random() * 0.01,
     phase: Math.random() * Math.PI * 2,
@@ -48,11 +68,42 @@ function createStar(w: number, h: number): Star {
   return {
     x: Math.random() * w,
     y: Math.random() * h,
-    size: 2 + Math.random() * 2,
+    size: 2 + Math.random() * 4,
     color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
     pulseSpeed: 0.01 + Math.random() * 0.025,
     phase: Math.random() * Math.PI * 2,
   };
+}
+
+function createBubble(w: number, h: number, randomY = false): Bubble {
+  return {
+    x: Math.random() * w,
+    y: randomY ? Math.random() * h : h + Math.random() * 100,
+    radius: 15 + Math.random() * 25,
+    color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
+    alpha: 0.08 + Math.random() * 0.07,
+    speed: 0.15 + Math.random() * 0.35,
+    wobble: 20 + Math.random() * 30,
+    wobbleSpeed: 0.003 + Math.random() * 0.006,
+    phase: Math.random() * Math.PI * 2,
+  };
+}
+
+// ── Draw functions ──────────────────────────────────────────
+
+function drawGradientBackground(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  time: number,
+) {
+  const hue = (time * 2) % 360;
+  const grad = ctx.createLinearGradient(0, 0, cw, ch);
+  grad.addColorStop(0, `hsl(${hue}, 12%, 96%)`);
+  grad.addColorStop(0.5, `hsl(${(hue + 40) % 360}, 12%, 97%)`);
+  grad.addColorStop(1, `hsl(${(hue + 80) % 360}, 12%, 96%)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cw, ch);
 }
 
 function drawPetal(ctx: CanvasRenderingContext2D, petal: Petal) {
@@ -74,16 +125,63 @@ function drawPetal(ctx: CanvasRenderingContext2D, petal: Petal) {
   ctx.restore();
 }
 
-function drawStar(ctx: CanvasRenderingContext2D, star: Star, time: number) {
-  const alpha = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(time * star.pulseSpeed + star.phase));
+function drawSparkle(
+  ctx: CanvasRenderingContext2D,
+  star: Star,
+  time: number,
+) {
+  const alpha =
+    0.3 + 0.5 * (0.5 + 0.5 * Math.sin(time * star.pulseSpeed + star.phase));
+  const outerR = star.size;
+  const innerR = star.size * 0.4;
+
   ctx.save();
+  ctx.translate(star.x, star.y);
   ctx.globalAlpha = alpha;
   ctx.fillStyle = star.color;
+
   ctx.beginPath();
-  ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+  for (let i = 0; i < 8; i++) {
+    const angle = (Math.PI / 4) * i - Math.PI / 2;
+    const r = i % 2 === 0 ? outerR : innerR;
+    const px = Math.cos(angle) * r;
+    const py = Math.sin(angle) * r;
+    if (i === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  }
+  ctx.closePath();
   ctx.fill();
+
   ctx.restore();
 }
+
+function drawBubble(ctx: CanvasRenderingContext2D, bubble: Bubble) {
+  ctx.save();
+  ctx.globalAlpha = bubble.alpha;
+
+  const grad = ctx.createRadialGradient(
+    bubble.x,
+    bubble.y,
+    0,
+    bubble.x,
+    bubble.y,
+    bubble.radius,
+  );
+  grad.addColorStop(0, '#FFFFFF');
+  grad.addColorStop(1, bubble.color);
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Component ───────────────────────────────────────────────
 
 const BackgroundCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,17 +218,34 @@ const BackgroundCanvas: React.FC = () => {
     const stars: Star[] = Array.from({ length: STAR_COUNT }, () =>
       createStar(w(), h()),
     );
+    const bubbles: Bubble[] = Array.from({ length: BUBBLE_COUNT }, () =>
+      createBubble(w(), h(), true),
+    );
 
     const animate = () => {
       time += 1;
       const cw = w();
       const ch = h();
 
-      ctx.clearRect(0, 0, cw, ch);
+      // Animated background gradient
+      drawGradientBackground(ctx, cw, ch, time);
 
-      // Update and draw stars
+      // Draw glow bubbles (behind everything)
+      for (let i = 0; i < bubbles.length; i++) {
+        const b = bubbles[i];
+        b.y -= b.speed;
+        b.x += Math.sin(time * b.wobbleSpeed + b.phase) * (b.wobble * 0.015);
+
+        if (b.y < -(b.radius * 2)) {
+          bubbles[i] = createBubble(cw, ch, false);
+        }
+
+        drawBubble(ctx, b);
+      }
+
+      // Draw sparkle stars
       for (const star of stars) {
-        drawStar(ctx, star, time);
+        drawSparkle(ctx, star, time);
       }
 
       // Update and draw petals
@@ -140,7 +255,6 @@ const BackgroundCanvas: React.FC = () => {
         p.x += Math.sin(time * p.wobbleSpeed + p.phase) * (p.wobble * 0.02);
         p.rotation += p.rotationSpeed;
 
-        // Recycle petals that fall below screen
         if (p.y > ch + p.size * 2) {
           petals[i] = createPetal(cw, ch, false);
           petals[i].y = -(petals[i].size * 2 + Math.random() * 40);

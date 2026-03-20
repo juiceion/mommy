@@ -3,14 +3,12 @@ import { PASTEL_COLORS } from '../utils/colors';
 import { ConfettiSystem } from '../canvas/confetti';
 
 const SEGMENTS = [
-  'Ты лучшая мама!',
-  'Обними маму 3 раза',
-  'Мама — королева!',
-  'Скажи "люблю" 5 раз',
-  'Самая красивая!',
-  'Приготовь маме чай',
-  'Бесконечная любовь!',
-  'Расскажи маме комплимент',
+  { short: 'Лучшая мама!', long: 'Ты самая невероятная мама на свете! Твоя любовь делает мир ярче и теплее каждый день!' },
+  { short: 'Обними маму!', long: 'Обними маму крепко-крепко 3 раза и скажи, как сильно ты её любишь!' },
+  { short: 'Королева!', long: 'Мама — настоящая королева! Корона невидимая, но все вокруг её чувствуют!' },
+  { short: 'Скажи "люблю"!', long: 'Скажи маме "Я тебя люблю" 5 раз подряд — каждый раз нежнее предыдущего!' },
+  { short: 'Красавица!', long: 'Ты самая красивая мама во всей вселенной, и это не комплимент — это научный факт!' },
+  { short: 'Чай для мамы!', long: 'Приготовь маме самый вкусный чай с любовью, печенькой и обнимашкой в подарок!' },
 ];
 
 const RouletteWheel: React.FC = () => {
@@ -29,7 +27,7 @@ const RouletteWheel: React.FC = () => {
     const h = canvas.offsetHeight;
     const cx = w / 2;
     const cy = h / 2;
-    const r = Math.min(w, h) * 0.35;
+    const r = Math.min(w, h) * 0.38;
     return { w, h, cx, cy, r };
   }, []);
 
@@ -37,10 +35,17 @@ const RouletteWheel: React.FC = () => {
     const { w, h, cx, cy, r } = getCanvasSize();
     ctx.clearRect(0, 0, w, h);
 
-    const segAngle = (Math.PI * 2) / SEGMENTS.length;
+    const segCount = SEGMENTS.length;
+    const segAngle = (Math.PI * 2) / segCount;
+
+    // Shadow under wheel
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 8, r + 5, r * 0.15, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(91, 44, 111, 0.06)';
+    ctx.fill();
 
     // Draw segments
-    for (let i = 0; i < SEGMENTS.length; i++) {
+    for (let i = 0; i < segCount; i++) {
       const startAngle = angleRef.current + i * segAngle;
       const endAngle = startAngle + segAngle;
 
@@ -49,65 +54,61 @@ const RouletteWheel: React.FC = () => {
       ctx.arc(cx, cy, r, startAngle, endAngle);
       ctx.closePath();
       ctx.fillStyle = PASTEL_COLORS[i % PASTEL_COLORS.length];
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = 0.9;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Text
+      // Text — short label
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(startAngle + segAngle / 2);
-      ctx.textAlign = 'right';
+      ctx.textAlign = 'center';
       ctx.fillStyle = '#5B2C6F';
       ctx.globalAlpha = 1;
-      ctx.font = `${Math.max(10, r * 0.09)}px Comfortaa`;
-
-      const text = SEGMENTS[i];
-      const maxWidth = r * 0.7;
-      // Simple word wrap
-      const words = text.split(' ');
-      const lines: string[] = [];
-      let currentLine = '';
-      for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-
-      const lineHeight = r * 0.11;
-      const offsetY = -((lines.length - 1) * lineHeight) / 2;
-      lines.forEach((line, li) => {
-        ctx.fillText(line, r * 0.85, offsetY + li * lineHeight + 4);
-      });
-
+      const fontSize = Math.max(11, r * 0.085);
+      ctx.font = `600 ${fontSize}px Comfortaa`;
+      ctx.fillText(SEGMENTS[i].short, r * 0.55, fontSize * 0.35);
       ctx.restore();
     }
 
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+
     // Center circle
     ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.arc(cx, cy, r * 0.14, 0, Math.PI * 2);
+    const centerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.14);
+    centerGrad.addColorStop(0, '#FFFFFF');
+    centerGrad.addColorStop(1, '#F3E8FF');
+    ctx.fillStyle = centerGrad;
     ctx.globalAlpha = 1;
     ctx.fill();
     ctx.strokeStyle = '#F9A8D4';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Pointer (top)
+    // Pointer (top) — prettier triangle
+    const pointerY = cy - r - 10;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - r - 15);
-    ctx.lineTo(cx - 12, cy - r - 35);
-    ctx.lineTo(cx + 12, cy - r - 35);
+    ctx.moveTo(cx, pointerY + 20);
+    ctx.lineTo(cx - 14, pointerY - 8);
+    ctx.lineTo(cx + 14, pointerY - 8);
     ctx.closePath();
-    ctx.fillStyle = '#F472B6';
+    const pointerGrad = ctx.createLinearGradient(cx, pointerY - 8, cx, pointerY + 20);
+    pointerGrad.addColorStop(0, '#F472B6');
+    pointerGrad.addColorStop(1, '#C084FC');
+    ctx.fillStyle = pointerGrad;
     ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Confetti
     confettiRef.current.update();
@@ -148,20 +149,19 @@ const RouletteWheel: React.FC = () => {
 
     const animate = () => {
       angleRef.current += velocityRef.current;
-      velocityRef.current *= 0.985; // Ease out
+      velocityRef.current *= 0.985;
 
       drawWheel(ctx);
 
       if (velocityRef.current > 0.001) {
         animRef.current = requestAnimationFrame(animate);
       } else {
-        // Determine result
-        const segAngle = (Math.PI * 2) / SEGMENTS.length;
+        const segCount = SEGMENTS.length;
+        const segAngle = (Math.PI * 2) / segCount;
         const normalizedAngle = (((-angleRef.current % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2));
-        // Pointer is at top (-PI/2), so adjust
         const pointerAngle = (normalizedAngle + Math.PI / 2) % (Math.PI * 2);
-        const segmentIndex = Math.floor(pointerAngle / segAngle) % SEGMENTS.length;
-        setResult(SEGMENTS[segmentIndex]);
+        const segmentIndex = Math.floor(pointerAngle / segAngle) % segCount;
+        setResult(SEGMENTS[segmentIndex].long);
         setSpinning(false);
         confettiRef.current.burst(cx, cy, 50);
         animRef.current = requestAnimationFrame(function drawConfetti() {
@@ -180,7 +180,14 @@ const RouletteWheel: React.FC = () => {
     <div className="section">
       <h2 className="section-title" style={{ zIndex: 1 }}>Мамина рулетка</h2>
 
-      <div style={{ position: 'relative', width: '100%', maxWidth: '400px', height: '400px', zIndex: 1 }}>
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: '380px',
+        aspectRatio: '1',
+        maxHeight: '50vh',
+        zIndex: 1,
+      }}>
         <canvas
           ref={canvasRef}
           style={{ width: '100%', height: '100%' }}
@@ -202,18 +209,22 @@ const RouletteWheel: React.FC = () => {
 
       {result && (
         <div
-          className="handwritten"
           style={{
-            marginTop: '1rem',
-            fontSize: '1.6rem',
-            color: '#5B2C6F',
+            marginTop: '1.5rem',
+            background: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '20px',
+            padding: '1.5rem 2rem',
+            maxWidth: '340px',
+            boxShadow: '0 8px 30px rgba(196, 181, 253, 0.3)',
             animation: 'fadeIn 0.4s ease',
-            textAlign: 'center',
             zIndex: 1,
-            maxWidth: '300px',
+            textAlign: 'center',
           }}
         >
-          {result}
+          <p className="handwritten" style={{ fontSize: '1.4rem', color: '#5B2C6F', lineHeight: 1.4 }}>
+            {result}
+          </p>
         </div>
       )}
 
