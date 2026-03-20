@@ -49,11 +49,11 @@ html, body, #root {
 }
 
 .section:nth-child(odd) {
-  background: linear-gradient(180deg, var(--bg-pink) 0%, var(--bg-lavender) 100%);
+  background: transparent;
 }
 
 .section:nth-child(even) {
-  background: linear-gradient(180deg, var(--bg-lavender) 0%, var(--bg-pink) 100%);
+  background: transparent;
 }
 
 .section-title {
