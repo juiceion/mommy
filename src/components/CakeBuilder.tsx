@@ -348,10 +348,13 @@ const CakeBuilder: React.FC = () => {
       drawFireworks(ts);
     }
 
+    // Keep animating while: any step animation is still in progress, candles need flame, or fireworks active
+    const now = performance.now();
+    const anyAnimating = stepsRef.current.some(s => s.placed && (now - s.placeTime) < 600);
     const hasCandles = stepsRef.current.find(s => s.id === 'candles')?.placed;
     const fwActive = fireworkRef.current.isActive;
 
-    if (hasCandles || fwActive) {
+    if (anyAnimating || hasCandles || fwActive) {
       animRef.current = requestAnimationFrame(loop);
     }
   }, [drawCake, drawFireworks]);

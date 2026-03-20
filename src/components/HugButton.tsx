@@ -5,15 +5,200 @@ import { createFloatingHeart, updateFloatingHeart, drawFloatingHeart } from '../
 const HUG_MESSAGES = [
   'Самая тёплая обнимашка!',
   'Ещё крепче!',
-  'Обнимашка с бесконечной любовью!',
+  'Мамочка, ты чудо!',
   'Тёплая-претёплая!',
   'Не отпускаю!',
   'Бесконечная нежность!',
   'Мамочка, ты лучшая!',
-  'Обнимаю до луны и обратно!',
   'Самые крепкие объятия!',
-  'Вся любовь мира — тебе!',
+  'Ты — моё счастье!',
+  'Обнимаю до луны и обратно!',
 ];
+
+/* ─── bunny drawing helpers ─── */
+
+function drawEar(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  outerColor: string,
+  innerColor: string,
+  angle: number,
+) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  // outer ear
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = outerColor;
+  ctx.fill();
+  // inner ear
+  ctx.beginPath();
+  ctx.ellipse(0, -h / 2, w / 2 - 3, h / 2 - 5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = innerColor;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBunnyEye(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  // eye
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#3a2a40';
+  ctx.fill();
+  // highlight
+  ctx.beginPath();
+  ctx.arc(x + r * 0.3, y - r * 0.3, r * 0.35, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+}
+
+function drawBunnyNose(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - size / 2);
+  ctx.lineTo(x - size / 2, y + size / 2);
+  ctx.lineTo(x + size / 2, y + size / 2);
+  ctx.closePath();
+  ctx.fillStyle = '#f9a8d4';
+  ctx.fill();
+}
+
+function drawSmile(ctx: CanvasRenderingContext2D, x: number, y: number, w: number) {
+  ctx.beginPath();
+  ctx.arc(x, y, w, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.strokeStyle = '#9b6b8a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawCheek(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(249,168,212,0.35)';
+  ctx.fill();
+}
+
+interface BunnyParams {
+  bodyColor: string;
+  earOuter: string;
+  earInner: string;
+  bodyH: number; // total height reference
+}
+
+const MAMA: BunnyParams = {
+  bodyColor: '#fbb6ce',  // soft pink
+  earOuter: '#f9a8d4',
+  earInner: '#fbcfe8',
+  bodyH: 120,
+};
+
+const BABY: BunnyParams = {
+  bodyColor: '#c4b5fd',  // lavender
+  earOuter: '#a78bfa',
+  earInner: '#ddd6fe',
+  bodyH: 80,
+};
+
+/**
+ * Draw a bunny at a given anchor (bottom-center of body).
+ * `armAngle` controls how far the near-side arm reaches (0 = at side, 1 = hugging).
+ * `facing` is 1 (facing right) or -1 (facing left).
+ */
+function drawBunny(
+  ctx: CanvasRenderingContext2D,
+  bx: number,
+  by: number,
+  p: BunnyParams,
+  facing: number, // 1 = right, -1 = left
+  armAngle: number, // 0..1 animation progress for hug arm
+) {
+  const scale = p.bodyH / 120; // normalize to mama=1
+  const s = (v: number) => v * scale;
+
+  // body (oval)
+  const bodyW = s(50);
+  const bodyH = s(60);
+  const bodyCY = by - bodyH;
+  ctx.beginPath();
+  ctx.ellipse(bx, bodyCY, bodyW, bodyH, 0, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+
+  // head (circle)
+  const headR = s(28);
+  const headCY = bodyCY - bodyH + headR * 0.3;
+  ctx.beginPath();
+  ctx.arc(bx, headCY, headR, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+
+  // ears
+  const earW = s(14);
+  const earH = s(34);
+  const earSpread = s(14);
+  drawEar(ctx, bx - earSpread, headCY - headR + s(4), earW, earH, p.earOuter, p.earInner, -0.15);
+  drawEar(ctx, bx + earSpread, headCY - headR + s(4), earW, earH, p.earOuter, p.earInner, 0.15);
+
+  // eyes
+  const eyeR = s(4);
+  const eyeY = headCY - s(2);
+  drawBunnyEye(ctx, bx - s(10), eyeY, eyeR);
+  drawBunnyEye(ctx, bx + s(10), eyeY, eyeR);
+
+  // nose
+  drawBunnyNose(ctx, bx, headCY + s(6), s(7));
+
+  // smile
+  drawSmile(ctx, bx, headCY + s(10), s(6));
+
+  // cheeks
+  drawCheek(ctx, bx - s(18), headCY + s(4), s(6));
+  drawCheek(ctx, bx + s(18), headCY + s(4), s(6));
+
+  // ─── arms ───
+  const armLen = s(35);
+  const armW = s(10);
+  const armOriginY = bodyCY - s(10);
+
+  // far arm (always at side)
+  const farSide = -facing;
+  ctx.save();
+  ctx.translate(bx + farSide * bodyW * 0.85, armOriginY);
+  ctx.rotate(farSide * 0.3);
+  ctx.beginPath();
+  ctx.ellipse(farSide * armLen * 0.35, armLen * 0.3, armW / 2, armLen / 2, farSide * 0.3, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+  ctx.restore();
+
+  // near arm (hugging arm) — rotates toward the other bunny
+  const nearSide = facing;
+  const hugRotation = nearSide * (0.3 - armAngle * 1.1); // swings inward
+  ctx.save();
+  ctx.translate(bx + nearSide * bodyW * 0.85, armOriginY);
+  ctx.rotate(hugRotation);
+  ctx.beginPath();
+  ctx.ellipse(nearSide * armLen * 0.35, armLen * 0.3, armW / 2, armLen / 2, nearSide * 0.3, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+  ctx.restore();
+
+  // little feet
+  const footY = by - s(4);
+  ctx.beginPath();
+  ctx.ellipse(bx - s(16), footY, s(12), s(6), 0, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(bx + s(16), footY, s(12), s(6), 0, 0, Math.PI * 2);
+  ctx.fillStyle = p.bodyColor;
+  ctx.fill();
+}
+
+/* ─── component ─── */
 
 const HugButton: React.FC = () => {
   const [hugs, setHugs] = useState(0);
@@ -21,11 +206,12 @@ const HugButton: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const heartsRef = useRef<FloatingHeart[]>([]);
   const animRef = useRef(0);
+  const hugProgressRef = useRef(0); // 0..1
 
   const addHearts = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 14; i++) {
       heartsRef.current.push(createFloatingHeart(canvas.offsetWidth, canvas.offsetHeight));
     }
   }, []);
@@ -49,12 +235,37 @@ const HugButton: React.FC = () => {
       const h = canvas.offsetHeight;
       ctx.clearRect(0, 0, w, h);
 
+      // ─── animate hug progress ───
+      const target = hugProgressRef.current;
+      // we store an internal "current" value on the ref object
+      if ((hugProgressRef as any)._cur == null) (hugProgressRef as any)._cur = 0;
+      const cur = (hugProgressRef as any)._cur as number;
+      const next = cur + (target - cur) * 0.12;
+      (hugProgressRef as any)._cur = next;
+
+      // ─── bunny positioning ───
+      const groundY = h - 20; // bottom of canvas area
+      const cx = w / 2;
+
+      // gap between bunnies shrinks with hug
+      const maxGap = 60;
+      const minGap = -8;
+      const gap = maxGap - next * (maxGap - minGap);
+
+      const mamaX = cx - gap / 2 - 15;
+      const babyX = cx + gap / 2 + 10;
+
+      // draw mama (facing right toward baby)
+      drawBunny(ctx, mamaX, groundY, MAMA, 1, next);
+      // draw baby (facing left toward mama)
+      drawBunny(ctx, babyX, groundY, BABY, -1, next);
+
+      // ─── floating hearts ───
       for (const heart of heartsRef.current) {
         updateFloatingHeart(heart);
         drawFloatingHeart(ctx, heart);
       }
       ctx.globalAlpha = 1;
-
       heartsRef.current = heartsRef.current.filter(h => h.y > -30);
 
       animRef.current = requestAnimationFrame(animate);
@@ -70,23 +281,29 @@ const HugButton: React.FC = () => {
   const handleHug = () => {
     setHugs(h => h + 1);
     setHugging(true);
+    hugProgressRef.current = 1;
     addHearts();
-    setTimeout(() => setHugging(false), 700);
+    setTimeout(() => {
+      setHugging(false);
+      hugProgressRef.current = 0;
+    }, 1400);
   };
 
   const message = hugs > 0 ? HUG_MESSAGES[(hugs - 1) % HUG_MESSAGES.length] : '';
 
   return (
-    <div
-      className="section"
-      style={{
-        transform: hugging ? 'scale(0.9)' : 'scale(1)',
-        transition: 'transform 0.4s ease',
-      }}
-    >
+    <div className="section">
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
       />
 
       {/* Warm glow overlay when hugging */}
@@ -101,10 +318,6 @@ const HugButton: React.FC = () => {
           zIndex: 0,
         }}
       />
-
-      {/* Arms */}
-      <div className={`hug-arm hug-arm-left ${hugging ? 'active' : ''}`} />
-      <div className={`hug-arm hug-arm-right ${hugging ? 'active' : ''}`} />
 
       <h2 className="section-title" style={{ zIndex: 1 }}>Обнимашки!</h2>
 
@@ -123,6 +336,7 @@ const HugButton: React.FC = () => {
 
       {hugs > 0 && (
         <div
+          key={hugs}
           style={{
             marginTop: '1.5rem',
             textAlign: 'center',
@@ -144,7 +358,7 @@ const HugButton: React.FC = () => {
         </div>
       )}
 
-      <div className="scroll-hint">↓</div>
+      <div className="scroll-hint">&darr;</div>
     </div>
   );
 };
