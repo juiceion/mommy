@@ -9,12 +9,12 @@ interface CakeStep {
 }
 
 const STEP_LABELS = [
-  'Добавить нижний слой',
-  'Добавить средний слой',
-  'Добавить верхний слой',
-  'Добавить свечи',
-  'Добавить вишенку',
-  'Добавить звёздочку',
+  'Нижний слой',
+  'Средний слой',
+  'Верхний слой',
+  'Свечи',
+  'Вишенка',
+  'Звёздочка',
 ];
 
 const STEP_IDS = ['bottom', 'middle', 'top', 'candles', 'cherry', 'star'];
@@ -28,75 +28,54 @@ function createSteps(): CakeStep[] {
   }));
 }
 
-/* ---- drawing helpers ---- */
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
 
 function scaleForStep(step: CakeStep, now: number): number {
   if (!step.placed) return 0;
   const elapsed = now - step.placeTime;
-  if (elapsed >= 300) return 1;
-  return elapsed / 300; // linear 0..1
+  if (elapsed >= 500) return 1;
+  return easeOutBack(Math.min(elapsed / 500, 1));
 }
 
-function drawPlate(ctx: CanvasRenderingContext2D, cx: number, baseY: number) {
+function drawPlate(ctx: CanvasRenderingContext2D, cx: number, baseY: number, plateW: number) {
+  // Shadow
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(cx, baseY + 8, 110, 14, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#E5E7EB';
+  ctx.ellipse(cx, baseY + 12, plateW * 0.48, 10, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
   ctx.fill();
-  ctx.strokeStyle = '#D1D5DB';
+
+  // Plate body
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY + 4, plateW * 0.52, 16, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#F8F9FA';
+  ctx.fill();
+  ctx.strokeStyle = '#E5E7EB';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.restore();
-}
 
-function drawRoundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number,
-) {
+  // Plate rim highlight
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function drawWavyFrosting(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, color: string,
-) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  const waves = 6;
-  const segW = w / waves;
-  for (let i = 0; i < waves; i++) {
-    const sx = x + i * segW;
-    ctx.bezierCurveTo(
-      sx + segW * 0.25, y - 8,
-      sx + segW * 0.75, y + 6,
-      sx + segW, y,
-    );
-  }
-  ctx.lineTo(x + w, y + 6);
-  ctx.lineTo(x, y + 6);
-  ctx.closePath();
-  ctx.fillStyle = color;
+  ctx.ellipse(cx, baseY + 2, plateW * 0.48, 12, 0, 0, Math.PI);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fill();
   ctx.restore();
 }
 
-function drawLayer(
+function drawCakeLayer(
   ctx: CanvasRenderingContext2D,
-  cx: number, topY: number,
-  w: number, h: number,
-  gradStart: string, gradEnd: string,
-  frostingColor: string,
+  cx: number,
+  topY: number,
+  w: number,
+  h: number,
+  color1: string,
+  color2: string,
+  frostColor: string,
+  frostDrip: boolean,
   scale: number,
 ) {
   if (scale <= 0) return;
@@ -106,23 +85,94 @@ function drawLayer(
   ctx.translate(-cx, -(topY + h / 2));
 
   const x = cx - w / 2;
-  const grad = ctx.createLinearGradient(x, topY, x, topY + h);
-  grad.addColorStop(0, gradStart);
-  grad.addColorStop(1, gradEnd);
+  const r = 14;
 
-  drawRoundedRect(ctx, x, topY, w, h, 10);
+  // Layer shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.08)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+
+  // Main body
+  const grad = ctx.createLinearGradient(x, topY, x + w, topY + h);
+  grad.addColorStop(0, color1);
+  grad.addColorStop(1, color2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, topY);
+  ctx.lineTo(x + w - r, topY);
+  ctx.quadraticCurveTo(x + w, topY, x + w, topY + r);
+  ctx.lineTo(x + w, topY + h);
+  ctx.lineTo(x, topY + h);
+  ctx.lineTo(x, topY + r);
+  ctx.quadraticCurveTo(x, topY, x + r, topY);
+  ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
+  ctx.restore();
 
-  drawWavyFrosting(ctx, x, topY, w, frostingColor);
+  // Cream stripe at the top
+  ctx.beginPath();
+  ctx.moveTo(x + r, topY);
+  ctx.lineTo(x + w - r, topY);
+  ctx.quadraticCurveTo(x + w, topY, x + w, topY + r);
+  ctx.lineTo(x + w, topY + 8);
+  ctx.lineTo(x, topY + 8);
+  ctx.lineTo(x, topY + r);
+  ctx.quadraticCurveTo(x, topY, x + r, topY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fill();
+
+  // Frosting drips on top
+  if (frostDrip) {
+    ctx.beginPath();
+    ctx.moveTo(x - 2, topY);
+
+    // Smooth wavy top
+    const segs = 8;
+    const segW = (w + 4) / segs;
+    for (let i = 0; i < segs; i++) {
+      const sx = x - 2 + i * segW;
+      const peakY = topY - 6 - Math.random() * 3;
+      ctx.bezierCurveTo(
+        sx + segW * 0.3, peakY,
+        sx + segW * 0.7, topY - 2,
+        sx + segW, topY - 1,
+      );
+    }
+
+    ctx.lineTo(x + w + 2, topY + 10);
+    ctx.lineTo(x - 2, topY + 10);
+    ctx.closePath();
+    ctx.fillStyle = frostColor;
+    ctx.fill();
+
+    // Drips going down
+    const dripPositions = [0.15, 0.35, 0.6, 0.8];
+    for (const dp of dripPositions) {
+      const dripX = x + w * dp;
+      const dripLen = 12 + Math.random() * 18;
+      const dripW = 5 + Math.random() * 3;
+
+      ctx.beginPath();
+      ctx.moveTo(dripX - dripW / 2, topY + 6);
+      ctx.quadraticCurveTo(dripX - dripW / 2, topY + 6 + dripLen * 0.6, dripX, topY + 6 + dripLen);
+      ctx.quadraticCurveTo(dripX + dripW / 2, topY + 6 + dripLen * 0.6, dripX + dripW / 2, topY + 6);
+      ctx.closePath();
+      ctx.fillStyle = frostColor;
+      ctx.fill();
+    }
+  }
 
   ctx.restore();
 }
 
 function drawCandles(
   ctx: CanvasRenderingContext2D,
-  cx: number, topOfCake: number,
-  scale: number, now: number,
+  cx: number,
+  topOfCake: number,
+  scale: number,
+  now: number,
 ) {
   if (scale <= 0) return;
   ctx.save();
@@ -130,43 +180,80 @@ function drawCandles(
   ctx.scale(scale, scale);
   ctx.translate(-cx, -topOfCake);
 
-  const candleW = 4;
-  const candleH = 30;
-  const positions = [cx - 30, cx, cx + 30];
+  const candleW = 7;
+  const candleH = 35;
+  const positions = [cx - 28, cx, cx + 28];
+  const candleColors = ['#F9A8D4', '#C4B5FD', '#93C5FD'];
+  const stripeColors = ['#FBCFE8', '#DDD6FE', '#BFDBFE'];
 
-  for (const px of positions) {
-    // candle body
-    ctx.fillStyle = '#FFFFFF';
-    ctx.strokeStyle = '#E5E7EB';
-    ctx.lineWidth = 0.8;
+  positions.forEach((px, idx) => {
     const cX = px - candleW / 2;
     const cY = topOfCake - candleH;
-    ctx.fillRect(cX, cY, candleW, candleH);
-    ctx.strokeRect(cX, cY, candleW, candleH);
 
-    // flame
-    const flicker = 1 + 0.2 * Math.sin(now * 0.008 + px);
-    const flameRx = 4 * flicker;
-    const flameRy = 7 * flicker;
-    const flameCy = cY - flameRy;
-
-    const grad = ctx.createRadialGradient(px, flameCy, 0, px, flameCy, flameRy);
-    grad.addColorStop(0, '#FDE68A');
-    grad.addColorStop(0.5, '#FB923C');
-    grad.addColorStop(1, 'rgba(251,146,60,0)');
-
+    // Candle body
+    ctx.fillStyle = candleColors[idx];
     ctx.beginPath();
-    ctx.ellipse(px, flameCy, flameRx, flameRy, 0, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
+    ctx.roundRect(cX, cY, candleW, candleH, 3);
     ctx.fill();
-  }
+
+    // Stripe
+    ctx.fillStyle = stripeColors[idx];
+    for (let s = 0; s < 3; s++) {
+      ctx.fillRect(cX, cY + 5 + s * 10, candleW, 4);
+    }
+
+    // Wick
+    ctx.beginPath();
+    ctx.moveTo(px, cY);
+    ctx.lineTo(px, cY - 6);
+    ctx.strokeStyle = '#6B7280';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Flame
+    const t = now * 0.005 + idx * 2.1;
+    const flickerX = Math.sin(t) * 1.5;
+    const flickerScale = 0.9 + 0.15 * Math.sin(t * 1.3);
+    const flameX = px + flickerX;
+    const flameY = cY - 6;
+
+    // Outer glow
+    const glow = ctx.createRadialGradient(flameX, flameY - 6, 0, flameX, flameY - 4, 14 * flickerScale);
+    glow.addColorStop(0, 'rgba(253, 230, 138, 0.4)');
+    glow.addColorStop(1, 'rgba(253, 230, 138, 0)');
+    ctx.beginPath();
+    ctx.arc(flameX, flameY - 5, 14 * flickerScale, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+
+    // Flame shape (teardrop)
+    ctx.beginPath();
+    const fh = 11 * flickerScale;
+    const fw = 4.5 * flickerScale;
+    ctx.moveTo(flameX, flameY - fh);
+    ctx.bezierCurveTo(flameX - fw, flameY - fh * 0.5, flameX - fw, flameY, flameX, flameY + 2);
+    ctx.bezierCurveTo(flameX + fw, flameY, flameX + fw, flameY - fh * 0.5, flameX, flameY - fh);
+    const fGrad = ctx.createLinearGradient(flameX, flameY - fh, flameX, flameY + 2);
+    fGrad.addColorStop(0, '#FDE68A');
+    fGrad.addColorStop(0.4, '#FB923C');
+    fGrad.addColorStop(1, '#EF4444');
+    ctx.fillStyle = fGrad;
+    ctx.fill();
+
+    // Inner bright core
+    ctx.beginPath();
+    ctx.ellipse(flameX, flameY - 2, 2 * flickerScale, 4 * flickerScale, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+  });
 
   ctx.restore();
 }
 
 function drawCherry(
   ctx: CanvasRenderingContext2D,
-  cx: number, cherryY: number,
+  cx: number,
+  cherryY: number,
   scale: number,
 ) {
   if (scale <= 0) return;
@@ -175,24 +262,43 @@ function drawCherry(
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cherryY);
 
-  // cherry body
+  const r = 10;
+
+  // Shadow
   ctx.beginPath();
-  ctx.arc(cx, cherryY, 8, 0, Math.PI * 2);
-  ctx.fillStyle = '#EF4444';
+  ctx.ellipse(cx + 2, cherryY + r - 2, r * 0.7, 3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
   ctx.fill();
 
-  // stem
+  // Cherry body
   ctx.beginPath();
-  ctx.moveTo(cx, cherryY - 7);
-  ctx.quadraticCurveTo(cx + 6, cherryY - 22, cx + 2, cherryY - 26);
+  ctx.arc(cx, cherryY, r, 0, Math.PI * 2);
+  const cGrad = ctx.createRadialGradient(cx - 3, cherryY - 3, 1, cx, cherryY, r);
+  cGrad.addColorStop(0, '#F87171');
+  cGrad.addColorStop(1, '#DC2626');
+  ctx.fillStyle = cGrad;
+  ctx.fill();
+
+  // Highlight
+  ctx.beginPath();
+  ctx.ellipse(cx - 3, cherryY - 3, 3, 4, -0.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fill();
+
+  // Stem
+  ctx.beginPath();
+  ctx.moveTo(cx + 1, cherryY - r + 2);
+  ctx.bezierCurveTo(cx + 4, cherryY - r - 12, cx + 12, cherryY - r - 16, cx + 8, cherryY - r - 22);
   ctx.strokeStyle = '#16A34A';
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
   ctx.stroke();
 
-  // highlight
+  // Leaf
   ctx.beginPath();
-  ctx.arc(cx - 2.5, cherryY - 2.5, 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.moveTo(cx + 8, cherryY - r - 14);
+  ctx.bezierCurveTo(cx + 16, cherryY - r - 18, cx + 18, cherryY - r - 10, cx + 10, cherryY - r - 10);
+  ctx.fillStyle = '#22C55E';
   ctx.fill();
 
   ctx.restore();
@@ -200,18 +306,32 @@ function drawCherry(
 
 function drawStar(
   ctx: CanvasRenderingContext2D,
-  cx: number, starY: number,
+  cx: number,
+  starY: number,
   scale: number,
+  now: number,
 ) {
   if (scale <= 0) return;
   ctx.save();
   ctx.translate(cx, starY);
-  ctx.scale(scale, scale);
+  const pulse = 1 + 0.06 * Math.sin(now * 0.003);
+  ctx.scale(scale * pulse, scale * pulse);
   ctx.translate(-cx, -starY);
 
   const spikes = 5;
-  const outerR = 15;
-  const innerR = 7;
+  const outerR = 18;
+  const innerR = 8;
+
+  // Glow
+  const glow = ctx.createRadialGradient(cx, starY, 0, cx, starY, outerR * 1.8);
+  glow.addColorStop(0, 'rgba(253, 230, 138, 0.35)');
+  glow.addColorStop(1, 'rgba(253, 230, 138, 0)');
+  ctx.beginPath();
+  ctx.arc(cx, starY, outerR * 1.8, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // Star body
   ctx.beginPath();
   for (let i = 0; i < spikes * 2; i++) {
     const r = i % 2 === 0 ? outerR : innerR;
@@ -222,16 +342,34 @@ function drawStar(
     else ctx.lineTo(x, y);
   }
   ctx.closePath();
-  ctx.fillStyle = '#FDE68A';
+
+  const sGrad = ctx.createLinearGradient(cx, starY - outerR, cx, starY + outerR);
+  sGrad.addColorStop(0, '#FDE68A');
+  sGrad.addColorStop(1, '#F59E0B');
+  ctx.fillStyle = sGrad;
   ctx.fill();
   ctx.strokeStyle = '#F59E0B';
   ctx.lineWidth = 1;
   ctx.stroke();
 
+  // Inner highlight
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const r = i % 2 === 0 ? outerR * 0.5 : innerR * 0.5;
+    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r;
+    const y = starY + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fill();
+
   ctx.restore();
 }
 
-/* ---- component ---- */
+/* ---- Component ---- */
 
 const CakeBuilder: React.FC = () => {
   const [steps, setSteps] = useState<CakeStep[]>(createSteps);
@@ -244,9 +382,8 @@ const CakeBuilder: React.FC = () => {
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
 
-  const isStep = (id: string) => stepsRef.current.find(s => s.id === id);
+  const getStep = (id: string) => stepsRef.current.find(s => s.id === id)!;
 
-  /* ---- cake draw loop ---- */
   const drawCake = useCallback((now: number) => {
     const canvas = cakeCanvasRef.current;
     if (!canvas) return;
@@ -267,54 +404,48 @@ const CakeBuilder: React.FC = () => {
     ctx.clearRect(0, 0, w, h);
 
     const cx = w / 2;
-    const baseY = h - 40;
+    const baseY = h - 30;
 
     // Plate
-    drawPlate(ctx, cx, baseY);
+    drawPlate(ctx, cx, baseY, 220);
 
-    // Bottom layer
-    const bottomStep = isStep('bottom')!;
-    const bottomScale = scaleForStep(bottomStep, now);
-    const bottomH = 50;
-    const bottomY = baseY - bottomH;
-    drawLayer(ctx, cx, bottomY, 180, bottomH, '#FBCFE8', '#F9A8D4', '#EC4899', bottomScale);
+    // Bottom layer - widest, pink
+    const bottomScale = scaleForStep(getStep('bottom'), now);
+    const bH = 55;
+    const bW = 200;
+    const bY = baseY - bH + 4;
+    drawCakeLayer(ctx, cx, bY, bW, bH, '#FBCFE8', '#F472B6', '#EC4899', true, bottomScale);
 
-    // Middle layer
-    const middleStep = isStep('middle')!;
-    const middleScale = scaleForStep(middleStep, now);
-    const middleH = 45;
-    const middleY = bottomY - middleH;
-    drawLayer(ctx, cx, middleY, 140, middleH, '#E9D5FF', '#C4B5FD', '#8B5CF6', middleScale);
+    // Middle layer - lavender
+    const middleScale = scaleForStep(getStep('middle'), now);
+    const mH = 48;
+    const mW = 150;
+    const mY = bY - mH + 4;
+    drawCakeLayer(ctx, cx, mY, mW, mH, '#E9D5FF', '#C4B5FD', '#A78BFA', true, middleScale);
 
-    // Top layer
-    const topStep = isStep('top')!;
-    const topScale = scaleForStep(topStep, now);
-    const topH = 40;
-    const topY = middleY - topH;
-    drawLayer(ctx, cx, topY, 100, topH, '#A7F3D0', '#6EE7B7', '#10B981', topScale);
+    // Top layer - mint, smallest
+    const topScale = scaleForStep(getStep('top'), now);
+    const tH = 42;
+    const tW = 105;
+    const tY = mY - tH + 4;
+    drawCakeLayer(ctx, cx, tY, tW, tH, '#A7F3D0', '#6EE7B7', '#34D399', true, topScale);
 
-    // Candles
-    const candleStep = isStep('candles')!;
-    const candleScale = scaleForStep(candleStep, now);
-    drawCandles(ctx, cx, topY, candleScale, now);
+    // Candles on top of the top layer
+    const candleScale = scaleForStep(getStep('candles'), now);
+    drawCandles(ctx, cx, tY + 2, candleScale, now);
 
     // Cherry
-    const cherryStep = isStep('cherry')!;
-    const cherryScale = scaleForStep(cherryStep, now);
-    const cherryY = topY - 30 - 12;
-    drawCherry(ctx, cx, cherryY, cherryScale);
+    const cherryScale = scaleForStep(getStep('cherry'), now);
+    drawCherry(ctx, cx, tY - 38, cherryScale);
 
     // Star
-    const starStep = isStep('star')!;
-    const starScale = scaleForStep(starStep, now);
-    const starY = cherryY - 28;
-    drawStar(ctx, cx, starY, starScale);
+    const starScale = scaleForStep(getStep('star'), now);
+    drawStar(ctx, cx, tY - 62, starScale, now);
 
     ctx.restore();
   }, []);
 
-  /* ---- firework draw loop ---- */
-  const drawFireworks = useCallback((now: number) => {
+  const drawFireworks = useCallback((_now: number) => {
     const canvas = fwCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -338,7 +469,6 @@ const CakeBuilder: React.FC = () => {
     ctx.restore();
   }, []);
 
-  /* ---- unified animation loop ---- */
   const loop = useCallback((ts: number) => {
     drawCake(ts);
 
@@ -354,14 +484,12 @@ const CakeBuilder: React.FC = () => {
     }
   }, [drawCake, drawFireworks]);
 
-  /* ---- kick a draw whenever steps change ---- */
   useEffect(() => {
     cancelAnimationFrame(animRef.current);
     animRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animRef.current);
   }, [steps, loop]);
 
-  /* ---- place a step ---- */
   const placeStep = useCallback((index: number) => {
     const now = performance.now();
     setSteps(prev => {
@@ -371,7 +499,6 @@ const CakeBuilder: React.FC = () => {
       const allPlaced = next.every(s => s.placed);
       if (allPlaced) {
         setCompleted(true);
-        // launch fireworks with a small delay so the canvas is ready
         requestAnimationFrame(() => {
           const fwCanvas = fwCanvasRef.current;
           if (fwCanvas) {
@@ -391,15 +518,12 @@ const CakeBuilder: React.FC = () => {
 
   return (
     <div className="section">
-      {/* Firework overlay */}
       <canvas
         ref={fwCanvasRef}
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
+          top: 0, left: 0,
+          width: '100%', height: '100%',
           pointerEvents: 'none',
           zIndex: 3,
         }}
@@ -409,27 +533,24 @@ const CakeBuilder: React.FC = () => {
         Собери торт для мамы!
       </h2>
 
-      {/* Cake canvas */}
       <canvas
         ref={cakeCanvasRef}
         style={{
-          width: '300px',
-          height: '350px',
-          maxWidth: '90vw',
+          width: 'min(340px, 85vw)',
+          height: 'min(380px, 50vh)',
           zIndex: 1,
           display: 'block',
-          marginBottom: '1.2rem',
+          marginBottom: '1rem',
         }}
       />
 
-      {/* Buttons */}
       <div
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '0.6rem',
+          gap: '0.5rem',
           justifyContent: 'center',
-          maxWidth: '400px',
+          maxWidth: 'min(450px, 90vw)',
           zIndex: 1,
         }}
       >
@@ -443,26 +564,28 @@ const CakeBuilder: React.FC = () => {
               disabled={disabled}
               onClick={() => placeStep(i)}
               style={{
-                padding: '0.55rem 1.1rem',
+                padding: '0.5rem 1rem',
                 borderRadius: '12px',
                 border: 'none',
-                fontSize: '0.95rem',
+                fontSize: '0.9rem',
+                fontFamily: "'Comfortaa', sans-serif",
                 cursor: disabled ? 'default' : 'pointer',
-                opacity: disabled ? 0.4 : 1,
+                opacity: step.placed ? 0.35 : disabled ? 0.5 : 1,
                 background: isNext
                   ? 'linear-gradient(135deg, #F9A8D4, #C4B5FD)'
                   : step.placed
                     ? '#E5E7EB'
                     : '#F3F4F6',
-                color: isNext ? '#fff' : '#6B7280',
+                color: isNext ? '#fff' : step.placed ? '#9CA3AF' : '#6B7280',
                 fontWeight: isNext ? 600 : 400,
-                transition: 'all 0.25s ease',
+                transition: 'all 0.3s ease',
                 boxShadow: isNext
-                  ? '0 4px 14px rgba(196,181,253,0.4)'
+                  ? '0 4px 14px rgba(196,181,253,0.5)'
                   : 'none',
+                textDecoration: step.placed ? 'line-through' : 'none',
               }}
             >
-              {step.label}
+              {step.placed ? `✓ ${step.label}` : step.label}
             </button>
           );
         })}
@@ -472,7 +595,7 @@ const CakeBuilder: React.FC = () => {
         <div
           className="handwritten"
           style={{
-            marginTop: '1.5rem',
+            marginTop: '1.2rem',
             fontSize: '1.8rem',
             color: '#5B2C6F',
             animation: 'fadeIn 0.5s ease',
