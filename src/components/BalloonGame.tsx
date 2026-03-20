@@ -230,7 +230,7 @@ const BalloonGame: React.FC = () => {
   }, []);
 
   return (
-    <div className="section" style={{ padding: 0 }}>
+    <div className="section" style={{ padding: 0, height: '100vh', minHeight: '100vh' }}>
       <div
         style={{
           position: 'absolute',
@@ -257,7 +257,7 @@ const BalloonGame: React.FC = () => {
         ref={canvasRef}
         onClick={handleClick}
         onTouchStart={handleClick}
-        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        style={{ width: '100%', height: '100vh', display: 'block', cursor: 'pointer' }}
       />
 
       {poppedWish && (
