@@ -5,7 +5,8 @@ import { ConfettiSystem } from '../canvas/confetti';
 const TARGET_PHRASE = 'С ДНЁМ РОЖДЕНИЯ';
 const TARGET_LETTERS = TARGET_PHRASE.split('');
 
-const CYRILLIC_DECOYS = 'АБВГЖЗИКЛОПРСТУФХЦЧШЩЭЮЯ'.split('');
+// Decoys are only letters that exist in the target phrase (shuffled)
+const PHRASE_UNIQUE_LETTERS = [...new Set(TARGET_PHRASE.replace(/ /g, '').split(''))];
 
 interface FloatingLetter {
   x: number;
@@ -55,10 +56,14 @@ function createFloatingLetter(
 
 function pickLetter(collectedCount: number): string {
   const nextNeeded = TARGET_LETTERS[collectedCount];
-  if (nextNeeded === ' ') return CYRILLIC_DECOYS[Math.floor(Math.random() * CYRILLIC_DECOYS.length)];
-  // 40% chance correct letter, 60% decoy
-  if (Math.random() < 0.4) return nextNeeded;
-  return CYRILLIC_DECOYS[Math.floor(Math.random() * CYRILLIC_DECOYS.length)];
+  if (!nextNeeded || nextNeeded === ' ') {
+    return PHRASE_UNIQUE_LETTERS[Math.floor(Math.random() * PHRASE_UNIQUE_LETTERS.length)];
+  }
+  // 50% chance correct letter, 50% other letter from the phrase
+  if (Math.random() < 0.5) return nextNeeded;
+  // Pick a different letter from the phrase
+  const others = PHRASE_UNIQUE_LETTERS.filter(l => l !== nextNeeded);
+  return others[Math.floor(Math.random() * others.length)];
 }
 
 function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
@@ -359,40 +364,59 @@ const BalloonGame: React.FC = () => {
       >
         <p
           className="section-title"
-          style={{ margin: '0 0 0.3rem 0', fontSize: '1.2rem', whiteSpace: 'nowrap' }}
+          style={{ margin: '0 0 0.4rem 0', fontSize: '1.1rem', whiteSpace: 'nowrap' }}
         >
-          Собери фразу!
+          Найди букву
+          {!completed && collectedRef.current < TARGET_LETTERS.length && TARGET_LETTERS[collectedRef.current] !== ' ' && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '1.8rem',
+              height: '1.8rem',
+              background: 'linear-gradient(135deg, #F9A8D4, #C4B5FD)',
+              borderRadius: '50%',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              marginLeft: '0.4rem',
+              verticalAlign: 'middle',
+              boxShadow: '0 2px 8px rgba(196,181,253,0.4)',
+            }}>
+              {TARGET_LETTERS[collectedCount]}
+            </span>
+          )}
         </p>
-        <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           {words.map((word, wi) => {
             const startIdx = charIndex;
             charIndex += word.length + 1; // +1 for the space
             return (
-              <div key={wi} style={{ display: 'flex', gap: '2px' }}>
+              <div key={wi} style={{ display: 'flex', gap: '3px' }}>
                 {word.split('').map((ch, ci) => {
                   const globalIdx = startIdx + ci;
                   const isRevealed = globalIdx < collectedCount;
+                  const isNext = globalIdx === collectedCount;
 
                   return (
                     <div
                       key={ci}
                       style={{
-                        width: '1.6rem',
+                        width: '1.5rem',
                         height: '2rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderBottom: '2px solid',
-                        borderColor: isRevealed ? '#C4B5FD' : 'rgba(91,44,111,0.3)',
+                        borderBottom: `2.5px solid ${isRevealed ? '#C4B5FD' : isNext ? '#F9A8D4' : 'rgba(91,44,111,0.2)'}`,
                         fontFamily: "'Caveat', cursive",
                         fontSize: '1.4rem',
                         fontWeight: 700,
-                        color: '#5B2C6F',
+                        color: isRevealed ? '#5B2C6F' : 'rgba(91,44,111,0.15)',
                         transition: 'all 0.3s ease',
-                        transform: isRevealed ? 'scale(1)' : 'scale(0.9)',
+                        transform: isRevealed ? 'scale(1.05)' : 'scale(0.9)',
                       }}
                     >
-                      {isRevealed ? ch : ''}
+                      {isRevealed ? ch : '?'}
                     </div>
                   );
                 })}
