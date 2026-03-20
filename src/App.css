@@ -175,38 +175,6 @@ html, body, #root {
   touch-action: pan-y;
 }
 
-/* CSS Heart for envelope */
-.envelope-heart {
-  width: 24px;
-  height: 24px;
-  position: relative;
-}
-
-.envelope-heart::before,
-.envelope-heart::after {
-  content: '';
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--heart-red);
-}
-
-.envelope-heart::before {
-  top: -12px;
-  left: 0;
-}
-
-.envelope-heart::after {
-  top: 0;
-  left: 12px;
-}
-
-.envelope-heart {
-  background: var(--heart-red);
-  transform: rotate(-45deg);
-}
-
 /* Hug arms */
 .hug-arm {
   position: absolute;

@@ -1,20 +1,30 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ConfettiSystem } from '../canvas/confetti';
+import { FireworkSystem } from '../canvas/fireworks';
 
 const Envelope: React.FC = () => {
   const [opened, setOpened] = useState(false);
+  const [showBtn, setShowBtn] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const confettiRef = useRef(new ConfettiSystem());
+  const fireworkRef = useRef(new FireworkSystem());
   const animRef = useRef(0);
 
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+    ctx.clearRect(0, 0, w, h);
+
     confettiRef.current.update();
     confettiRef.current.draw(ctx);
-    if (confettiRef.current.isActive) {
+
+    fireworkRef.current.update();
+    fireworkRef.current.draw(ctx);
+
+    if (confettiRef.current.isActive || fireworkRef.current.isActive) {
       animRef.current = requestAnimationFrame(animate);
     }
   }, []);
@@ -27,7 +37,7 @@ const Envelope: React.FC = () => {
       canvas.width = canvas.offsetWidth * dpr;
       canvas.height = canvas.offsetHeight * dpr;
       const ctx = canvas.getContext('2d')!;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -41,23 +51,43 @@ const Envelope: React.FC = () => {
     if (opened) return;
     setOpened(true);
     const canvas = canvasRef.current!;
-    confettiRef.current.burst(canvas.offsetWidth / 2, canvas.offsetHeight / 2, 80);
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+
+    // Confetti burst immediately
+    confettiRef.current.burst(w / 2, h / 2, 80);
     animRef.current = requestAnimationFrame(animate);
+
+    // Fireworks after 300ms
+    setTimeout(() => {
+      fireworkRef.current.launchMultiple(w, h, 4);
+      // Restart animation if it stopped
+      cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(animate);
+    }, 300);
+
+    // Show scroll button after 1.5s
+    setTimeout(() => setShowBtn(true), 1500);
+  };
+
+  const scrollDown = () => {
+    const section = (canvasRef.current?.closest('.section') as HTMLElement)?.nextElementSibling;
+    section?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <div className="section" style={{ cursor: opened ? 'default' : 'pointer' }} onClick={handleOpen}>
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }}
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}
       />
 
       {/* Envelope */}
       <div
         style={{
           position: 'relative',
-          width: '260px',
-          height: '180px',
+          width: 'min(280px, 80vw)',
+          height: 'min(200px, 55vw)',
           perspective: '800px',
           zIndex: 1,
         }}
@@ -68,7 +98,7 @@ const Envelope: React.FC = () => {
             width: '100%',
             height: '100%',
             background: 'linear-gradient(135deg, #FECDD3, #E9D5FF)',
-            borderRadius: '12px',
+            borderRadius: '14px',
             boxShadow: '0 8px 30px rgba(196, 181, 253, 0.3)',
             position: 'relative',
             overflow: 'hidden',
@@ -90,20 +120,34 @@ const Envelope: React.FC = () => {
               zIndex: 3,
             }}
           />
-          {/* Heart seal */}
+          {/* SVG Heart seal */}
           {!opened && (
-            <div
-              className="envelope-heart"
+            <svg
+              width="32"
+              height="30"
+              viewBox="0 0 28 26"
               style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                marginLeft: '-12px',
-                marginTop: '-18px',
+                transform: 'translate(-50%, -50%)',
                 zIndex: 4,
                 animation: 'pulse 2s infinite',
+                filter: 'drop-shadow(0 2px 4px rgba(244, 114, 182, 0.4))',
               }}
-            />
+            >
+              <path
+                d="M14 24 C14 24 1 16 1 8.5 C1 4.4 4.4 1 8.5 1 C11 1 13.2 2.4 14 4.5 C14.8 2.4 17 1 19.5 1 C23.6 1 27 4.4 27 8.5 C27 16 14 24 14 24Z"
+                fill="#F472B6"
+              />
+              <path
+                d="M8.5 3 C6 3 3.5 5 3.5 8.5 C3.5 9.5 4 11 5 12.5"
+                fill="none"
+                stroke="rgba(255,255,255,0.4)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
           )}
         </div>
 
@@ -111,36 +155,50 @@ const Envelope: React.FC = () => {
         <div
           style={{
             position: 'absolute',
-            top: opened ? '-100%' : '10%',
-            left: '10%',
-            width: '80%',
-            height: '80%',
+            top: opened ? '-120%' : '10%',
+            left: '5%',
+            width: '90%',
+            minHeight: '80%',
             background: 'white',
-            borderRadius: '10px',
+            borderRadius: '12px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
             transition: 'top 0.8s ease 0.3s, opacity 0.5s ease 0.3s',
             opacity: opened ? 1 : 0,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 5,
-            padding: '1rem',
+            padding: '1.2rem',
           }}
         >
-          <p className="handwritten" style={{ fontSize: '1.3rem', textAlign: 'center', color: '#5B2C6F' }}>
-            Открытка для самой лучшей мамы!
+          <p className="handwritten" style={{ fontSize: '1.2rem', textAlign: 'center', color: '#5B2C6F', lineHeight: 1.5 }}>
+            Дорогая мамочка!
+          </p>
+          <p className="handwritten" style={{ fontSize: '1rem', textAlign: 'center', color: '#8B5CF6', lineHeight: 1.4, marginTop: '0.4rem' }}>
+            Эта открытка — маленькое путешествие, которое я создал специально для тебя!
           </p>
         </div>
       </div>
 
       {!opened && (
-        <p style={{ marginTop: '2rem', fontSize: '1.1rem', opacity: 0.7, animation: 'pulse 2s infinite' }}>
+        <p className="handwritten" style={{ marginTop: '2rem', fontSize: '1.3rem', opacity: 0.7, animation: 'pulse 2s infinite', color: '#8B5CF6' }}>
           Нажми, чтобы открыть
         </p>
       )}
 
-      {opened && (
-        <div className="scroll-hint">↓</div>
+      {opened && showBtn && (
+        <button
+          className="btn"
+          onClick={(e) => { e.stopPropagation(); scrollDown(); }}
+          style={{
+            marginTop: '2rem',
+            animation: 'fadeIn 0.5s ease',
+            zIndex: 11,
+          }}
+        >
+          Листай вниз
+        </button>
       )}
     </div>
   );
