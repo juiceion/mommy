@@ -32,10 +32,17 @@ const BUTTON_TEXTS = [
 interface FlyingCompliment {
   id: number;
   text: string;
-  x: number;
-  y: number;
+  slot: number; // fixed position slot index
   rotation: number;
 }
+
+// Pre-defined slots that avoid center (where button/title are)
+// Each slot: [x%, y%] — positioned around edges, not overlapping center
+const COMPLIMENT_SLOTS: [number, number][] = [
+  [5, 8], [55, 5], [75, 10], [85, 25],
+  [8, 75], [60, 80], [80, 75], [5, 30],
+  [70, 88], [15, 88], [90, 50], [3, 55],
+];
 
 const DontPressButton: React.FC = () => {
   const [presses, setPresses] = useState(0);
@@ -45,6 +52,7 @@ const DontPressButton: React.FC = () => {
   const animRef = useRef(0);
   const sectionRef = useRef<HTMLDivElement>(null);
   const idCounter = useRef(0);
+  const nextSlotRef = useRef(0);
 
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
@@ -66,7 +74,7 @@ const DontPressButton: React.FC = () => {
       canvas.width = canvas.offsetWidth * dpr;
       canvas.height = canvas.offsetHeight * dpr;
       const ctx = canvas.getContext('2d')!;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -90,23 +98,27 @@ const DontPressButton: React.FC = () => {
       clientY = e.clientY;
     }
 
-    // Heart burst at click position
     heartBurstRef.current.burst(clientX - rect.left, clientY - rect.top, 8);
     cancelAnimationFrame(animRef.current);
     animRef.current = requestAnimationFrame(animate);
 
-    // Flying compliment
-    const id = idCounter.current++;
-    const text = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
-    const x = 10 + Math.random() * 60;
-    const y = 10 + Math.random() * 60;
-    const rotation = (Math.random() - 0.5) * 30;
+    // Use next slot in rotation
+    const slot = nextSlotRef.current;
+    nextSlotRef.current = (nextSlotRef.current + 1) % COMPLIMENT_SLOTS.length;
 
-    setCompliments(prev => [...prev.slice(-8), { id, text, x, y, rotation }]);
+    const id = idCounter.current++;
+    const text = COMPLIMENTS[id % COMPLIMENTS.length];
+    const rotation = (Math.random() - 0.5) * 20;
+
+    setCompliments(prev => {
+      // Remove any compliment already in this slot
+      const filtered = prev.filter(c => c.slot !== slot);
+      return [...filtered.slice(-6), { id, text, slot, rotation }];
+    });
 
     setTimeout(() => {
       setCompliments(prev => prev.filter(c => c.id !== id));
-    }, 2000);
+    }, 2500);
   };
 
   const btnText = BUTTON_TEXTS[Math.min(presses, BUTTON_TEXTS.length - 1)];
@@ -118,30 +130,37 @@ const DontPressButton: React.FC = () => {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }}
       />
 
-      {/* Flying compliments */}
-      {compliments.map(c => (
-        <div
-          key={c.id}
-          className="handwritten"
-          style={{
-            position: 'absolute',
-            left: `${c.x}%`,
-            top: `${c.y}%`,
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: '#8B5CF6',
-            transform: `rotate(${c.rotation}deg)`,
-            animation: 'fadeIn 0.3s ease',
-            pointerEvents: 'none',
-            zIndex: 1,
-            textShadow: '0 2px 10px rgba(139, 92, 246, 0.3)',
-          }}
-        >
-          {c.text}
-        </div>
-      ))}
+      {/* Flying compliments — positioned in fixed slots around edges */}
+      {compliments.map(c => {
+        const [sx, sy] = COMPLIMENT_SLOTS[c.slot];
+        return (
+          <div
+            key={c.id}
+            className="handwritten"
+            style={{
+              position: 'absolute',
+              left: `${sx}%`,
+              top: `${sy}%`,
+              fontSize: '1.4rem',
+              fontWeight: 700,
+              color: '#8B5CF6',
+              transform: `rotate(${c.rotation}deg)`,
+              animation: 'fadeIn 0.3s ease',
+              pointerEvents: 'none',
+              zIndex: 1,
+              textShadow: '0 2px 10px rgba(139, 92, 246, 0.3)',
+              whiteSpace: 'nowrap',
+              maxWidth: '40vw',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {c.text}
+          </div>
+        );
+      })}
 
-      <h2 className="section-title" style={{ zIndex: 1 }}>Секретная кнопка</h2>
+      <h2 className="section-title" style={{ zIndex: 3 }}>Секретная кнопка</h2>
 
       <button
         className="btn"
@@ -149,7 +168,7 @@ const DontPressButton: React.FC = () => {
         style={{
           fontSize: '1.3rem',
           padding: '1rem 2.5rem',
-          zIndex: 1,
+          zIndex: 3,
           animation: presses > 0 ? 'shake 0.5s ease' : undefined,
           background: presses > 3
             ? 'linear-gradient(135deg, #F472B6, #A78BFA)'
@@ -160,12 +179,12 @@ const DontPressButton: React.FC = () => {
       </button>
 
       {presses > 0 && (
-        <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.6, zIndex: 1 }}>
+        <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.6, zIndex: 3 }}>
           Нажато раз: {presses}
         </p>
       )}
 
-      <div className="scroll-hint">↓</div>
+      <div className="scroll-hint">{'\u2193'}</div>
     </div>
   );
 };

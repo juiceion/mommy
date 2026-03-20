@@ -120,35 +120,7 @@ const Envelope: React.FC = () => {
               zIndex: 3,
             }}
           />
-          {/* SVG Heart seal */}
-          {!opened && (
-            <svg
-              width="32"
-              height="30"
-              viewBox="0 0 28 26"
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 4,
-                animation: 'pulse 2s infinite',
-                filter: 'drop-shadow(0 2px 4px rgba(244, 114, 182, 0.4))',
-              }}
-            >
-              <path
-                d="M14 24 C14 24 1 16 1 8.5 C1 4.4 4.4 1 8.5 1 C11 1 13.2 2.4 14 4.5 C14.8 2.4 17 1 19.5 1 C23.6 1 27 4.4 27 8.5 C27 16 14 24 14 24Z"
-                fill="#F472B6"
-              />
-              <path
-                d="M8.5 3 C6 3 3.5 5 3.5 8.5 C3.5 9.5 4 11 5 12.5"
-                fill="none"
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          )}
+          {/* Empty - heart removed by user request */}
         </div>
 
         {/* Card sliding out */}
