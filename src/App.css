@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Marck+Script&family=Nunito:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Nunito:wght@400;600;700&display=swap');
 
 * {
   margin: 0;
@@ -63,16 +63,16 @@ html, body, #root {
 }
 
 .section-title {
-  font-family: 'Marck Script', cursive;
+  font-family: 'Playfair Display', serif;
   font-size: 2.5rem;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--text-color);
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .handwritten {
-  font-family: 'Marck Script', cursive;
+  font-family: 'Playfair Display', serif;
 }
 
 .btn {
