@@ -40,9 +40,9 @@ interface Bubble {
 
 // ── Constants ───────────────────────────────────────────────
 
-const PETAL_COUNT = 30;
-const STAR_COUNT = 30;
-const BUBBLE_COUNT = 12;
+const PETAL_COUNT = 12;
+const STAR_COUNT = 15;
+const BUBBLE_COUNT = 5;
 
 const STAR_COLORS = ['#FACC15', '#FFFFFF', '#A855F7'];
 
@@ -54,7 +54,7 @@ function createPetal(w: number, h: number, randomY = false): Petal {
     y: randomY ? Math.random() * h : -(Math.random() * h * 0.3),
     size: 10 + Math.random() * 12,
     color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
-    alpha: 0.4 + Math.random() * 0.4,
+    alpha: 0.25 + Math.random() * 0.25,
     rotation: Math.random() * Math.PI * 2,
     rotationSpeed: (Math.random() - 0.5) * 0.012,
     speed: 0.3 + Math.random() * 0.6,

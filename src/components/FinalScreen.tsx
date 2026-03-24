@@ -147,8 +147,8 @@ const FinalScreen: React.FC = () => {
       const heartSize = Math.min(w, h) * 0.1 * heartScale;
       drawHeart(ctx, w / 2, h / 2 - 30, heartSize, '#F43F5E', 0.7);
 
-      // Floating hearts
-      if (Math.random() > 0.92) {
+      // Floating hearts (sparse)
+      if (Math.random() > 0.97) {
         heartsRef.current.push(createFloatingHeart(w, h));
       }
       for (const heart of heartsRef.current) {
@@ -184,34 +184,52 @@ const FinalScreen: React.FC = () => {
           zIndex: 1,
           textAlign: 'center',
           animation: 'fadeIn 1s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <h2
-          className="handwritten"
+        <div
           style={{
-            fontSize: '2.8rem',
-            color: '#1E3A2F',
-            textShadow: '0 4px 20px rgba(30, 58, 47, 0.12)',
-            marginBottom: '1rem',
+            background: 'rgba(255,255,255,0.7)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderRadius: '24px',
+            padding: '2rem 2.5rem',
+            maxWidth: 'min(420px, 85vw)',
           }}
         >
-          С Днём Рождения, мамочка!
-        </h2>
-        <p
-          className="handwritten"
-          style={{
-            fontSize: '1.3rem',
-            lineHeight: 1.6,
+          <h2
+            className="handwritten"
+            style={{
+              fontSize: '2.5rem',
+              color: '#1E3A2F',
+              marginBottom: '0.8rem',
+            }}
+          >
+            С Днём Рождения, мамочка!
+          </h2>
+          <p
+            style={{
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: '1.15rem',
+              lineHeight: 1.7,
+              color: '#1E3A2F',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Обнимаю тебя крепко-крепко ♡
+          </p>
+          <p style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: '1rem',
             color: '#1E3A2F',
-            opacity: 0.8,
-            maxWidth: '400px',
-          }}
-        >
-          Обнимаю тебя крепко-крепко ♡
-        </p>
-        <p style={{ fontSize: '1rem', opacity: 0.6, maxWidth: '400px', marginTop: '0.5rem' }}>
-          Ты — самое ценное в моей жизни. Люблю бесконечно!
-        </p>
+            opacity: 0.7,
+          }}>
+            Ты — самое ценное в моей жизни. Люблю бесконечно!
+          </p>
+        </div>
       </div>
     </div>
   );
