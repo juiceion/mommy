@@ -1,29 +1,31 @@
 export const COLORS = {
-  bgPink: '#FFF5F7',
-  bgLavender: '#F8F0FF',
-  accentPink: '#F9A8D4',
-  accentLavender: '#C4B5FD',
-  accentGold: '#FDE68A',
-  text: '#5B2C6F',
-  textLight: '#8B5CF6',
+  bgPrimary: '#FEFCE8',
+  bgSecondary: '#F0FDF4',
+  accentPink: '#EC4899',
+  accentGreen: '#22C55E',
+  accentGold: '#FACC15',
+  accentViolet: '#A855F7',
+  accentCoral: '#FB7185',
+  text: '#1E3A2F',
+  textLight: '#7C3AED',
   white: '#FFFFFF',
-  heartRed: '#F472B6',
+  heartRed: '#F43F5E',
 } as const;
 
 export const PASTEL_COLORS = [
-  '#F9A8D4', // розовый
-  '#C4B5FD', // сиреневый
-  '#A7F3D0', // мятный
-  '#FDBA74', // персиковый
-  '#93C5FD', // голубой
-  '#FDE68A', // золотой
-  '#FCA5A5', // коралловый
-  '#D8B4FE', // лавандовый
+  '#EC4899', // яркая сакура
+  '#A855F7', // фиолетовый
+  '#22C55E', // весенняя зелень
+  '#FACC15', // солнечный жёлтый
+  '#FB7185', // тёплый коралл
+  '#38BDF8', // небесно-голубой
+  '#F97316', // мандариновый
+  '#34D399', // изумрудный мятный
 ];
 
 export const CONFETTI_COLORS = [
   ...PASTEL_COLORS,
-  '#FDE68A', // доп. золотой
+  '#FDE047', // доп. жёлтый
   '#F5D0A9', // доп. золотой тёплый
 ];
 

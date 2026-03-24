@@ -44,7 +44,7 @@ const PETAL_COUNT = 30;
 const STAR_COUNT = 30;
 const BUBBLE_COUNT = 12;
 
-const STAR_COLORS = ['#FDE68A', '#FFFFFF', '#C4B5FD'];
+const STAR_COLORS = ['#FACC15', '#FFFFFF', '#A855F7'];
 
 // ── Factory functions ───────────────────────────────────────
 
@@ -97,11 +97,11 @@ function drawGradientBackground(
   ch: number,
   time: number,
 ) {
-  const hue = (time * 2) % 360;
+  const hue = 80 + ((time * 1.5) % 80); // 80-160 green-yellow range
   const grad = ctx.createLinearGradient(0, 0, cw, ch);
-  grad.addColorStop(0, `hsl(${hue}, 12%, 96%)`);
-  grad.addColorStop(0.5, `hsl(${(hue + 40) % 360}, 12%, 97%)`);
-  grad.addColorStop(1, `hsl(${(hue + 80) % 360}, 12%, 96%)`);
+  grad.addColorStop(0, `hsl(${hue}, 25%, 95%)`);
+  grad.addColorStop(0.5, `hsl(${hue + 30}, 22%, 96%)`);
+  grad.addColorStop(1, `hsl(${hue + 60}, 20%, 95%)`);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, cw, ch);
 }

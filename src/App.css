@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Caveat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Marck+Script&family=Nunito:wght@400;600;700&display=swap');
 
 * {
   margin: 0;
@@ -7,29 +7,32 @@
 }
 
 :root {
-  --bg-pink: #FFF5F7;
-  --bg-lavender: #F8F0FF;
-  --accent-pink: #F9A8D4;
-  --accent-lavender: #C4B5FD;
-  --accent-gold: #FDE68A;
-  --text-color: #5B2C6F;
-  --text-light: #8B5CF6;
+  --bg-primary: #FEFCE8;
+  --bg-secondary: #F0FDF4;
+  --accent-pink: #EC4899;
+  --accent-green: #22C55E;
+  --accent-gold: #FACC15;
+  --accent-violet: #A855F7;
+  --accent-coral: #FB7185;
+  --text-color: #1E3A2F;
+  --text-light: #7C3AED;
   --white: #FFFFFF;
-  --heart-red: #F472B6;
+  --heart-red: #F43F5E;
 }
 
 html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'Comfortaa', sans-serif;
+  font-family: 'Nunito', sans-serif;
   color: var(--text-color);
-  background: var(--bg-pink);
+  background: var(--bg-primary);
 }
 
 .app {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
@@ -40,6 +43,7 @@ html, body, #root {
 .section {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
@@ -59,35 +63,35 @@ html, body, #root {
 }
 
 .section-title {
-  font-family: 'Caveat', cursive;
+  font-family: 'Marck Script', cursive;
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-color);
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .handwritten {
-  font-family: 'Caveat', cursive;
+  font-family: 'Marck Script', cursive;
 }
 
 .btn {
-  font-family: 'Comfortaa', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 1.1rem;
   font-weight: 600;
   padding: 0.8rem 2rem;
   border: none;
   border-radius: 50px;
-  background: linear-gradient(135deg, var(--accent-pink), var(--accent-lavender));
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-violet));
   color: var(--white);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 15px rgba(249, 168, 212, 0.4);
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
 }
 
 .btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(249, 168, 212, 0.6);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
 }
 
 .btn:active {
@@ -175,44 +179,4 @@ html, body, #root {
 
 .section {
   touch-action: pan-y;
-}
-
-/* Hug arms */
-.hug-arm {
-  position: absolute;
-  top: 50%;
-  width: 80px;
-  height: 200px;
-  border-radius: 40px;
-  transition: transform 0.4s ease;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.hug-arm-left {
-  left: 0;
-  transform: translateY(-50%) translateX(-120px);
-  background: linear-gradient(to right, rgba(249, 168, 212, 0.5), rgba(249, 168, 212, 0.15));
-}
-
-.hug-arm-right {
-  right: 0;
-  transform: translateY(-50%) translateX(120px);
-  background: linear-gradient(to left, rgba(249, 168, 212, 0.5), rgba(249, 168, 212, 0.15));
-}
-
-.hug-arm-left.active {
-  transform: translateY(-50%) translateX(20px);
-}
-
-.hug-arm-right.active {
-  transform: translateY(-50%) translateX(-20px);
-}
-
-@media (max-width: 480px) {
-  .hug-arm {
-    width: 50px;
-    height: 150px;
-    border-radius: 25px;
-  }
 }

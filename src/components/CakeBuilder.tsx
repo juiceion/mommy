@@ -181,8 +181,8 @@ function drawCandles(
   const candleW = 7;
   const candleH = 35;
   const positions = [cx - 28, cx, cx + 28];
-  const candleColors = ['#F9A8D4', '#C4B5FD', '#93C5FD'];
-  const stripeColors = ['#FBCFE8', '#DDD6FE', '#BFDBFE'];
+  const candleColors = ['#EC4899', '#A855F7', '#38BDF8'];
+  const stripeColors = ['#F9A8D4', '#C4B5FD', '#7DD3FC'];
 
   positions.forEach((px, idx) => {
     const cX = px - candleW / 2;
@@ -294,21 +294,21 @@ const CakeBuilder: React.FC = () => {
     const bH = 55;
     const bW = 200;
     const bY = baseY - bH + 4;
-    drawCakeLayer(ctx, cx, bY, bW, bH, '#FBCFE8', '#F472B6', '#EC4899', bottomScale, dripsRef.current.bottom);
+    drawCakeLayer(ctx, cx, bY, bW, bH, '#FBCFE8', '#EC4899', '#DB2777', bottomScale, dripsRef.current.bottom);
 
     // Middle layer
     const middleScale = scaleForStep(getStep('middle'), now);
     const mH = 48;
     const mW = 150;
     const mY = bY - mH + 4;
-    drawCakeLayer(ctx, cx, mY, mW, mH, '#E9D5FF', '#C4B5FD', '#A78BFA', middleScale, dripsRef.current.middle);
+    drawCakeLayer(ctx, cx, mY, mW, mH, '#E9D5FF', '#A855F7', '#7C3AED', middleScale, dripsRef.current.middle);
 
     // Top layer
     const topScale = scaleForStep(getStep('top'), now);
     const tH = 42;
     const tW = 105;
     const tY = mY - tH + 4;
-    drawCakeLayer(ctx, cx, tY, tW, tH, '#A7F3D0', '#6EE7B7', '#34D399', topScale, dripsRef.current.top);
+    drawCakeLayer(ctx, cx, tY, tW, tH, '#BBF7D0', '#22C55E', '#16A34A', topScale, dripsRef.current.top);
 
     // Candles
     const candleScale = scaleForStep(getStep('candles'), now);
@@ -437,16 +437,16 @@ const CakeBuilder: React.FC = () => {
                 borderRadius: '12px',
                 border: 'none',
                 fontSize: '0.9rem',
-                fontFamily: "'Comfortaa', sans-serif",
+                fontFamily: "'Nunito', sans-serif",
                 cursor: disabled ? 'default' : 'pointer',
                 opacity: step.placed ? 0.35 : disabled ? 0.5 : 1,
                 background: isNext
-                  ? 'linear-gradient(135deg, #F9A8D4, #C4B5FD)'
+                  ? 'linear-gradient(135deg, #EC4899, #A855F7)'
                   : step.placed ? '#E5E7EB' : '#F3F4F6',
                 color: isNext ? '#fff' : step.placed ? '#9CA3AF' : '#6B7280',
                 fontWeight: isNext ? 600 : 400,
                 transition: 'all 0.3s ease',
-                boxShadow: isNext ? '0 4px 14px rgba(196,181,253,0.5)' : 'none',
+                boxShadow: isNext ? '0 4px 14px rgba(168,85,247,0.5)' : 'none',
                 textDecoration: step.placed ? 'line-through' : 'none',
               }}
             >
@@ -462,7 +462,7 @@ const CakeBuilder: React.FC = () => {
           style={{
             marginTop: '1.2rem',
             fontSize: '1.8rem',
-            color: '#5B2C6F',
+            color: '#1E3A2F',
             animation: 'fadeIn 0.5s ease',
             textAlign: 'center',
             zIndex: 1,

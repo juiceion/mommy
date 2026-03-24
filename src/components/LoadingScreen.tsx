@@ -128,7 +128,7 @@ const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       style={{
         opacity: done ? 0 : 1,
         transition: 'opacity 0.6s ease',
-        background: 'linear-gradient(180deg, #FFF5F7 0%, #F8F0FF 100%)',
+        background: 'linear-gradient(180deg, #FEFCE8 0%, #F0FDF4 100%)',
         zIndex: 100,
         position: done ? 'absolute' : 'relative',
       }}
@@ -151,7 +151,7 @@ const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
             width: '280px',
             height: '12px',
             borderRadius: '6px',
-            background: 'rgba(196, 181, 253, 0.3)',
+            background: 'rgba(168, 85, 247, 0.2)',
             overflow: 'hidden',
             margin: '0 auto 1rem',
           }}
@@ -161,7 +161,7 @@ const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
               width: `${progress}%`,
               height: '100%',
               borderRadius: '6px',
-              background: 'linear-gradient(90deg, #F9A8D4, #C4B5FD)',
+              background: 'linear-gradient(90deg, #EC4899, #A855F7)',
               transition: 'width 0.1s ease',
             }}
           />

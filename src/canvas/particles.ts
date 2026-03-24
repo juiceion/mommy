@@ -21,7 +21,7 @@ const DEFAULTS: Particle = {
   vx: 0,
   vy: 0,
   size: 6,
-  color: '#F9A8D4',
+  color: '#EC4899',
   alpha: 1,
   rotation: 0,
   rotationSpeed: 0,
