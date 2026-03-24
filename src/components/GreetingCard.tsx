@@ -23,6 +23,7 @@ const GreetingCard: React.FC = () => {
   const confettiRef = useRef(new ConfettiSystem());
   const animRef = useRef(0);
   const timeRef = useRef(0);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Canvas animation (decorative flowers + confetti)
   useEffect(() => {
@@ -82,6 +83,10 @@ const GreetingCard: React.FC = () => {
     const timer = setInterval(() => {
       i++;
       setDisplayText(GREETING_TEXT.slice(0, i));
+      // Auto-scroll to bottom
+      if (cardRef.current) {
+        cardRef.current.scrollTop = cardRef.current.scrollHeight;
+      }
       if (i >= GREETING_TEXT.length) {
         clearInterval(timer);
         setPhase('done');
@@ -163,6 +168,7 @@ const GreetingCard: React.FC = () => {
       {/* Opening / Typing / Done */}
       {phase !== 'closed' && (
         <div
+          ref={cardRef}
           style={{
             zIndex: 1,
             width: 'min(360px, 88vw)',
@@ -176,13 +182,14 @@ const GreetingCard: React.FC = () => {
             boxShadow: '0 8px 32px rgba(168,85,247,0.2)',
             border: '1px solid rgba(236,72,153,0.15)',
             animation: phase === 'opening' ? 'fadeIn 0.8s ease' : undefined,
+            scrollbarWidth: 'none',
           }}
         >
           <div
-            className="handwritten"
             style={{
-              fontSize: '1.35rem',
-              lineHeight: 1.7,
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: '1.1rem',
+              lineHeight: 1.8,
               color: '#1E3A2F',
               whiteSpace: 'pre-wrap',
               minHeight: '200px',
